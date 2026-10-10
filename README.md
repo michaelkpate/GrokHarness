@@ -1,4 +1,4 @@
-# Grok-Harness v0.7.0
+# Grok-Harness v0.7.1
 
 Local Mac / Windows desktop shell for [Grok Build](https://github.com/xai-org/grok-build). The window talks to a local agent over ACP; it does not rewrite Grok.
 
@@ -58,7 +58,7 @@ npm ci
 npm run build:win
 ```
 
-Output / 输出：`release/Grok-Harness-Setup-0.7.0.exe`.
+Output / 输出：`release/Grok-Harness-Setup-0.7.1.exe`.
 
 ## Conversations / 会话管理
 
@@ -76,7 +76,7 @@ Every GitHub iteration **must** bump `package.json` version and add a bilingual 
 
 每次迭代到 GitHub **必须**升版本号并在 `CHANGELOG.md` 新增中英双语说明。规则见 [`AGENTS.md`](./AGENTS.md)。
 
-Current / 当前：**v0.7.0**
+Current / 当前：**v0.7.1**
 
 ## Safety / 安全
 

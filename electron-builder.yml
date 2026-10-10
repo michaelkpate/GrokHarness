@@ -22,7 +22,7 @@ nsis:
   allowElevation: false
   createDesktopShortcut: always
   createStartMenuShortcut: true
-  shortcutName: Grok-Harness
+  shortcutName: Grok Harness
   uninstallDisplayName: Grok-Harness
   runAfterFinish: false
   artifactName: ${productName}-Setup-${version}.${ext}

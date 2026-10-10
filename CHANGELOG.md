@@ -6,6 +6,18 @@ Every GitHub iteration must add a section here in both Chinese and English. See 
 
 ---
 
+## 0.7.1 — 2026-10-11
+
+### 中文
+
+- Windows 安装包生成的桌面和开始菜单快捷方式统一命名为 `Grok Harness`。
+
+### English
+
+- Windows installer desktop and Start menu shortcuts now use the name `Grok Harness`.
+
+---
+
 ## 0.7.0 — 2026-10-10
 
 ### 中文

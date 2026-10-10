@@ -9,6 +9,8 @@ npm run build:win
 
 Outputs in `release/`: NSIS installer, installer blockmap, `latest.yml`, and `win-unpacked/` for runtime testing. Install for the current user; no administrator permission or Node.js runtime is required. The official Grok CLI is a separate prerequisite. Selected CLI paths live in the app's user-data `desktop-preferences.json`; credentials remain managed by the official CLI in `~/.grok` (or `GROK_HOME`).
 
+Desktop and Start menu shortcuts are named `Grok Harness` / 桌面和开始菜单快捷方式统一命名为 `Grok Harness`.
+
 ## Release
 
 1. Verify type checks, packaged startup, missing-prerequisite flow, single instance, tray exit, and the installed application.

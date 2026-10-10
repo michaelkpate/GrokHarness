@@ -1,6 +1,6 @@
 {
   "name": "grok-harness",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "description": "Grok-Harness desktop application for Grok Build",
   "type": "module",
