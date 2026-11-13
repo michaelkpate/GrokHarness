@@ -76,7 +76,7 @@ async function readSummary(sessionDir: string, fallbackId: string, fallbackCwd?:
       sessionId,
       sessionKind: asString(json?.session_kind),
       cwd,
-      title: title || "未命名对话",
+      title: title || "Untitled chat",
       updatedAt,
       updatedAtMs,
     };
@@ -84,7 +84,7 @@ async function readSummary(sessionDir: string, fallbackId: string, fallbackCwd?:
     return {
       sessionId: fallbackId,
       cwd: fallbackCwd,
-      title: "未命名对话",
+      title: "Untitled chat",
       updatedAt: mtimeMs ? new Date(mtimeMs).toISOString() : undefined,
       updatedAtMs: mtimeMs,
     };
@@ -97,7 +97,7 @@ export function sanitizeSessionTitle(text: string): string {
 
 export async function writeSessionTitle(sessionId: string, title: string, cwd?: string): Promise<void> {
   const dir = await resolveSessionDir(sessionId, cwd);
-  if (!dir) throw new Error("找不到会话目录");
+  if (!dir) throw new Error("Conversation folder not found");
   const file = join(dir, "summary.json");
   let json: Record<string, unknown> = {};
   try {
@@ -165,7 +165,7 @@ async function readSubagentsInDir(parent: string, parentSessionId: string, cwd?:
       return {
         id, parentSessionId, sessionId: child && SESSION_ID.test(child) ? child : undefined,
         cwd: asString(meta.child_cwd) ?? cwd,
-        description: asString(meta.description) ?? asString(meta.subagent_type) ?? "子代理",
+        description: asString(meta.description) ?? asString(meta.subagent_type) ?? "Subagent",
         agentType: asString(meta.subagent_type) ?? "general-purpose",
         status: asString(meta.status) ?? "unknown", prompt: asString(meta.prompt),
         startedAt: asString(meta.started_at), completedAt: asString(meta.completed_at),

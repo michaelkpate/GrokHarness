@@ -104,14 +104,14 @@ function createTray(): void {
   tray.on("click", () => showWindow());
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: "显示窗口", click: () => showWindow() },
-      { label: "桌面应用与更新", click: () => {
+      { label: "Show window", click: () => showWindow() },
+      { label: "Desktop app & updates", click: () => {
         showWindow();
         mainWindow?.webContents.send("desktop:open");
       } },
       { type: "separator" },
       {
-        label: "退出",
+        label: "Quit",
         click: () => {
           app.quit();
         },
@@ -213,9 +213,9 @@ app.whenReady().then(async () => {
     return state;
   });
   ipcMain.handle("desktop:chooseBinary", async () => {
-    if (hasActiveWork()) throw new Error("请等待当前对话和后台任务结束后再切换 Grok 程序。");
+    if (hasActiveWork()) throw new Error("Wait for the current conversation and background tasks to finish before switching the Grok program.");
     const result = await dialog.showOpenDialog(mainWindow!, {
-      title: "选择官方 grok.exe", properties: ["openFile"], filters: [{ name: "Grok CLI", extensions: ["exe"] }],
+      title: "Select the official grok.exe", properties: ["openFile"], filters: [{ name: "Grok CLI", extensions: ["exe"] }],
     });
     if (result.canceled || !result.filePaths[0]) return desktop.getState();
     const state = await desktop.useBinary(result.filePaths[0]);
@@ -230,7 +230,7 @@ app.whenReady().then(async () => {
   ipcMain.handle("desktop:checkUpdate", () => desktop.checkUpdate());
   ipcMain.handle("desktop:downloadUpdate", () => desktop.downloadUpdate());
   ipcMain.handle("desktop:installUpdate", async () => {
-    if (hasActiveWork()) throw new Error("请等待当前对话和后台任务结束后再重启更新。");
+    if (hasActiveWork()) throw new Error("Wait for the current conversation and background tasks to finish before restarting to update.");
     if (desktop.getState().update.phase !== "downloaded") return;
     await shutdown();
     desktop.installUpdate();
@@ -245,7 +245,7 @@ app.whenReady().then(async () => {
   ipcMain.handle("grok:pickFolder", async () => {
     const win = mainWindow;
     const options: Electron.OpenDialogOptions = {
-      title: "选择工作目录",
+      title: "Select working directory",
       properties: ["openDirectory"],
     };
     const result =
@@ -302,12 +302,12 @@ app.whenReady().then(async () => {
   ipcMain.handle("grok:pickFiles", async () => {
     const win = mainWindow;
     const options: Electron.OpenDialogOptions = {
-      title: "添加文件",
+      title: "Add files",
       properties: ["openFile", "multiSelections"],
       filters: [
-        { name: "全部文件", extensions: ["*"] },
-        { name: "图片", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"] },
-        { name: "音频", extensions: ["wav", "mp3", "m4a", "aac", "ogg", "webm", "flac"] },
+        { name: "All files", extensions: ["*"] },
+        { name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"] },
+        { name: "Audio", extensions: ["wav", "mp3", "m4a", "aac", "ogg", "webm", "flac"] },
       ],
     };
     const result =
@@ -361,7 +361,7 @@ app.whenReady().then(async () => {
     return host.getSnapshot();
   });
   ipcMain.handle("grok:manageSessions", async (_evt, ids: unknown, action: unknown, groupId?: unknown) => {
-    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) throw new Error("会话选择无效");
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) throw new Error("Invalid conversation selection");
     return host.manageSessions(ids, action as import("../shared/types").SessionBatchAction, typeof groupId === "string" ? groupId : undefined);
   });
   ipcMain.handle("grok:saveSessionGroup", (_evt, id: unknown, name: unknown) => {
@@ -388,13 +388,13 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["删除", "取消"],
+      buttons: ["Delete", "Cancel"],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "删除会话",
-      message: "删除这个本地会话？",
-      detail: "会话及其子代理记录将移到 .grok/session-cleanup-backups，保留可恢复备份。不会删除云端历史或项目文件。运行中的会话会跳过。",
+      title: "Delete conversation",
+      message: "Delete this local conversation?",
+      detail: "The conversation and its subagent records will be moved to .grok/session-cleanup-backups as a recoverable backup. Cloud history and project files are not deleted. Running conversations are skipped.",
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return host.getSnapshot();
@@ -412,15 +412,15 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["删除", "取消"],
+      buttons: ["Delete", "Cancel"],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "删除已归档会话",
+      title: "Delete archived conversations",
       message: explicit
-        ? `删除已选的 ${count} 个本地已归档会话？`
-        : `删除全部 ${count} 个本地已归档会话？`,
-      detail: "保留可恢复备份到 .grok/session-cleanup-backups，云端历史不受影响。运行中的会话会跳过。",
+        ? `Delete the ${count} selected local archived conversation(s)?`
+        : `Delete all ${count} local archived conversation(s)?`,
+      detail: "A recoverable backup is kept in .grok/session-cleanup-backups. Cloud history is not affected. Running conversations are skipped.",
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return host.getSnapshot();
@@ -458,13 +458,13 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["删除", "取消"],
+      buttons: ["Delete", "Cancel"],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "删除工作区",
-      message: "删除这个工作区的全部会话？",
-      detail: `将删除 ${count} 个本地会话，并保留备份到 .grok/session-cleanup-backups。云端历史和项目文件夹不受影响，运行中的会话会跳过。`,
+      title: "Delete workspace",
+      message: "Delete all conversations in this workspace?",
+      detail: `${count} local conversation(s) will be deleted, with a backup kept in .grok/session-cleanup-backups. Cloud history and project folders are not affected. Running conversations are skipped.`,
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return host.getSnapshot();
@@ -540,18 +540,18 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const menu = Menu.buildFromTemplate([
       {
-        label: "复制图片",
+        label: "Copy image",
         click: () => {
           copyImageToClipboard(path);
         },
       },
       {
-        label: "复制路径",
+        label: "Copy path",
         click: () => clipboard.writeText(path),
       },
       { type: "separator" },
       {
-        label: "打开文件",
+        label: "Open file",
         click: () => {
           void shell.openPath(path);
         },
@@ -562,7 +562,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("grok:openPath", async (_evt, folder: string) => {
     const target = String(folder ?? "").trim();
-    if (!target) return { ok: false, error: "没有可打开的路径" };
+    if (!target) return { ok: false, error: "No path to open" };
     const error = await shell.openPath(target);
     return error ? { ok: false, error } : { ok: true };
   });
@@ -583,13 +583,13 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["删除", "取消"],
+      buttons: ["Delete", "Cancel"],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "删除资源",
-      message: "从资源库删除这个文件？",
-      detail: "会删除磁盘上的生成文件，无法恢复。",
+      title: "Delete asset",
+      message: "Delete this file from the library?",
+      detail: "The generated file will be deleted from disk. This cannot be undone.",
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return { ok: false };
@@ -597,7 +597,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("grok:exportMedia", async (_evt, path: unknown, name?: unknown) => {
     const src = String(path ?? "");
-    if (!src || !isAllowedMediaPath(src)) return { ok: false, error: "找不到文件" };
+    if (!src || !isAllowedMediaPath(src)) return { ok: false, error: "File not found" };
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const fileName = typeof name === "string" && name.trim() ? name.trim() : basename(src);
     const result = win

@@ -17,24 +17,24 @@ export function UpdatePanel({
   const atRisk = update?.atRisk ?? [];
   const busyRisk = atRisk.some((row) => row.busy);
   return (
-    <Dialog title="Grok Build 更新" className="changelog-panel" onClose={onClose}>
+    <Dialog title="Grok Build update" className="changelog-panel" onClose={onClose}>
         <p className="settings-lead">
           {available
             ? `Grok Build ${update?.currentVersion} → ${update?.latestVersion}`
-            : `当前 Grok Build ${update?.currentVersion || "—"}`}
+            : `Current Grok Build ${update?.currentVersion || "—"}`}
           {update?.channel ? ` · ${update.channel}` : ""}
         </p>
-        {update?.checking ? <p className="settings-lead">正在检查更新…</p> : null}
-        {update?.translating ? <p className="settings-lead">正在用 Grok Build 翻译本次更新说明…</p> : null}
+        {update?.checking ? <p className="settings-lead">Checking for updates...</p> : null}
+        {update?.translating ? <p className="settings-lead">Saving the release notes...</p> : null}
         {update?.error ? <div className="error-banner">{update.error}</div> : null}
         {available && atRisk.length > 0 ? (
           <section className="settings-section risk-box">
-            <h3>{busyRisk ? "当前对话进行中，更新会立刻中断" : "更新会中断这些会话"}</h3>
+            <h3>{busyRisk ? "A conversation is running. Updating will interrupt it now." : "Updating will interrupt these conversations"}</h3>
             <ul className="risk-list">
               {atRisk.map((row) => (
                 <li key={row.sessionId}>
                   <strong>{row.title}</strong>
-                  {row.busy ? <em>进行中</em> : null}
+                  {row.busy ? <em>Running</em> : null}
                   {row.cwd ? <span>{row.cwd}</span> : null}
                 </li>
               ))}
@@ -43,21 +43,21 @@ export function UpdatePanel({
         ) : null}
         {update?.translatedLog ? (
           <section className="settings-section changelog-body">
-            <h3>中文更新日志</h3>
+            <h3>Changelog</h3>
             <div className="md changelog-md">
               <Markdown remarkPlugins={[remarkGfm]}>{update.translatedLog}</Markdown>
             </div>
           </section>
         ) : null}
         <section className="settings-section changelog-body">
-          <h3>{available ? `Grok Build ${update?.latestVersion}` : "本机版本"}</h3>
+          <h3>{available ? `Grok Build ${update?.latestVersion}` : "Installed version"}</h3>
           {available && update?.latestNotes ? (
             <div className="md changelog-md">
               <Markdown remarkPlugins={[remarkGfm]}>{update.latestNotes}</Markdown>
             </div>
           ) : available ? (
             <>
-              <p className="settings-lead">还没有拉到 {update?.latestVersion} 的远程说明。下面是本机 {update?.currentVersion} 的日志。</p>
+              <p className="settings-lead">Notes for {update?.latestVersion} are not available yet. Showing the log for installed {update?.currentVersion}.</p>
               {update?.currentNotes ? (
                 <div className="md changelog-md">
                   <Markdown remarkPlugins={[remarkGfm]}>{update.currentNotes}</Markdown>
@@ -69,22 +69,22 @@ export function UpdatePanel({
               <Markdown remarkPlugins={[remarkGfm]}>{notes}</Markdown>
             </div>
           ) : (
-            <p className="settings-lead">没有找到这一版的更新说明。</p>
+            <p className="settings-lead">No release notes found for this version.</p>
           )}
         </section>
         {available ? (
           <div className="changelog-actions">
             <button className="btn ghost" type="button" onClick={onClose} disabled={update?.applying}>
-              稍后
+              Later
             </button>
             <button className="btn danger" type="button" onClick={onApply} disabled={update?.applying}>
               {update?.translating
-                ? "正在翻译…"
+                ? "Preparing..."
                 : update?.applying
-                  ? "正在更新…"
+                  ? "Updating..."
                   : busyRisk || atRisk.length
-                    ? "中断并更新"
-                    : "立即更新"}
+                    ? "Interrupt and update"
+                    : "Update now"}
             </button>
           </div>
         ) : null}

@@ -72,7 +72,7 @@ export class DesktopController {
     try {
       const binary = resolveGrokBinary();
       if (process.platform === "win32" && !/\.exe$/i.test(binary)) {
-        throw new Error("请选择官方 grok.exe 可执行文件。");
+        throw new Error("Select the official grok.exe executable.");
       }
       const version = await new Promise<string>((resolve, reject) => {
         const child = spawn(binary, ["--version"], {
@@ -81,21 +81,21 @@ export class DesktopController {
           env: { ...process.env, GROK_DISABLE_AUTOUPDATER: "1" },
         });
         let output = "";
-        const timeout = setTimeout(() => { child.kill(); reject(new Error("Grok 版本检查超时。")); }, 8000);
+        const timeout = setTimeout(() => { child.kill(); reject(new Error("Grok version check timed out.")); }, 8000);
         child.stdout?.on("data", (data: Buffer) => { output = (output + data.toString()).slice(-1024); });
         child.once("error", (error) => { clearTimeout(timeout); reject(error); });
         child.once("close", (code) => {
           clearTimeout(timeout);
           const match = /^grok\s+(\S+)/m.exec(output);
           if (code === 0 && match) resolve(match[1]);
-          else reject(new Error("无法运行所选 Grok 程序。"));
+          else reject(new Error("Could not run the selected Grok program."));
         });
       });
       this.state.cli = { installed: true, authenticated: await hasGrokCredentials(), checking: false,
         loggingIn: Boolean(this.loginChild), binary, version };
     } catch {
       this.state.cli = { installed: false, authenticated: false, checking: false, loggingIn: false,
-        error: "未找到可运行的官方 Grok CLI。" };
+        error: "No runnable official Grok CLI found." };
     }
     this.emit();
     return this.getState();
@@ -115,7 +115,7 @@ export class DesktopController {
     }
     if (previous) process.env.GROK_BINARY = previous;
     else delete process.env.GROK_BINARY;
-    this.state.cli = { ...previousCli, error: "未能切换到所选程序，已保留原配置。" };
+    this.state.cli = { ...previousCli, error: "Could not switch to the selected program; the previous configuration was kept." };
     this.emit();
     return this.getState();
   }
@@ -145,7 +145,7 @@ export class DesktopController {
       if (this.loginChild !== child) return;
       this.loginChild = undefined;
       await this.checkCli();
-      if (failed && !this.state.cli.authenticated) this.state.cli.error = "登录未完成，请重试。";
+      if (failed && !this.state.cli.authenticated) this.state.cli.error = "Sign-in did not complete. Please try again.";
       this.emit();
     };
     child.once("exit", (code) => void finish(code !== 0));
@@ -171,17 +171,17 @@ export class DesktopController {
         signal: AbortSignal.timeout(15_000),
       });
       if (response.status === 404) {
-        this.state.update = { phase: "idle", message: "尚无正式发行版。" };
+        this.state.update = { phase: "idle", message: "No official release yet." };
       } else {
         if (!response.ok) throw new Error("Release request failed");
         const release = await response.json() as { tag_name?: unknown; assets?: unknown };
         const latestVersion = typeof release.tag_name === "string" ? release.tag_name.replace(/^v/, "") : undefined;
         if (!hasWindowsUpdateAssets(release.assets)) {
-          this.state.update = { phase: "idle", latestVersion, message: "GitHub 尚未提供 Windows 更新包。" };
+          this.state.update = { phase: "idle", latestVersion, message: "GitHub does not offer a Windows update package yet." };
         } else if (latestVersion && isNewerVersion(latestVersion, this.state.version)) {
           this.state.update = { phase: "available", latestVersion };
         } else {
-          this.state.update = { phase: "idle", latestVersion, message: "当前已是最新版本。" };
+          this.state.update = { phase: "idle", latestVersion, message: "You are on the latest version." };
         }
       }
     } catch {
@@ -192,7 +192,7 @@ export class DesktopController {
   }
 
   private updateError(): void {
-    this.state.update = { ...this.state.update, phase: "error", error: "应用更新检查或下载失败，请稍后重试。" };
+    this.state.update = { ...this.state.update, phase: "error", error: "App update check or download failed. Please try again later." };
     this.emit();
   }
 
@@ -203,7 +203,7 @@ export class DesktopController {
     try {
       const result = await autoUpdater.checkForUpdates();
       if (!result?.isUpdateAvailable) {
-        this.state.update = { phase: "idle", message: "当前已是最新版本。" };
+        this.state.update = { phase: "idle", message: "You are on the latest version." };
       } else {
         await autoUpdater.downloadUpdate();
       }

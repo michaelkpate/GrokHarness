@@ -11,21 +11,21 @@ const ASPECTS = ["auto", "1:1", "16:9", "9:16", "4:3", "3:4"] as const;
 
 const COPY: Record<StudioTab, { title: string; hint: string; empty: string; placeholder: string }> = {
   image: {
-    title: "图片生成",
-    hint: "图片保存在本机。添加参考图可以修改已有画面。",
-    empty: "还没有生成过图片。在底部写下画面，生成后会出现在这里。",
-    placeholder: "描述画面，例如：金色日落下的平静海面，剪影棕榈树",
+    title: "Image generation",
+    hint: "Images are saved on this computer. Add a reference image to edit an existing one.",
+    empty: "No images yet. Describe a scene below and results will appear here.",
+    placeholder: "Describe the scene, e.g. a calm sea at golden sunset with silhouetted palms",
   },
   video: {
-    title: "视频生成",
-    hint: "添加参考图作为起始画面，或直接描述想要的镜头。",
-    empty: "还没有生成过视频。在底部写下镜头，生成后会出现在这里。",
-    placeholder: "描述镜头，例如：一只猫在爵士酒吧弹钢琴，镜头缓慢推近",
+    title: "Video generation",
+    hint: "Add a reference image as the opening frame, or just describe the shot.",
+    empty: "No videos yet. Describe a shot below and results will appear here.",
+    placeholder: "Describe the shot, e.g. a cat playing piano in a jazz bar, slow push-in",
   },
   voice: {
-    title: "语音转写",
-    hint: "支持听写、录音和上传音频。转写结果保存到本机资源库。",
-    empty: "还没有保存过转写。听写、录音或上传音频后会出现在这里。",
+    title: "Transcription",
+    hint: "Dictate, record or upload audio. Transcripts are saved to the local library.",
+    empty: "No transcripts yet. Dictate, record or upload audio and they will appear here.",
     placeholder: "",
   },
 };
@@ -70,8 +70,8 @@ function dayLabel(key: string): string {
   const now = new Date();
   const today = dayKey(now.getTime());
   const yest = dayKey(now.getTime() - 86400000);
-  if (key === today) return "今天";
-  if (key === yest) return "昨天";
+  if (key === today) return "Today";
+  if (key === yest) return "Yesterday";
   return key;
 }
 
@@ -226,7 +226,7 @@ export function MediaStudio({
     if (imageRef) {
       await run(
         {
-          text: `请用附件图片做 image_edit，按下面说明修改，不要另起一张无关的新图。\n${prompt}${aspect !== "auto" ? `\naspect_ratio: ${aspect}` : ""}`,
+          text: `Use the attached image with image_edit and modify it as described below. Do not create an unrelated new image.\n${prompt}${aspect !== "auto" ? `\naspect_ratio: ${aspect}` : ""}`,
           attachments: [imageRef],
           sessionRefs: [],
         },
@@ -237,7 +237,7 @@ export function MediaStudio({
     }
     await run(
       {
-        text: `/imagine ${prompt}${aspect !== "auto" ? `\n请使用 aspect_ratio ${aspect}。` : ""}`,
+        text: `/imagine ${prompt}${aspect !== "auto" ? `\nUse aspect_ratio ${aspect}.` : ""}`,
         attachments: [],
         sessionRefs: [],
       },
@@ -250,8 +250,8 @@ export function MediaStudio({
     const prompt = videoPrompt.trim();
     if (!prompt) return;
     const extra = videoRef
-      ? `用附件图作为第一帧，调用 image_to_video，时长 ${duration} 秒。`
-      : `时长 ${duration} 秒。`;
+      ? `Use the attached image as the first frame and call image_to_video. Duration: ${duration} seconds.`
+      : `Duration: ${duration} seconds.`;
     await run(
       {
         text: `/imagine-video ${prompt}\n${extra}`,
@@ -267,7 +267,7 @@ export function MediaStudio({
     const Ctor = speechCtor();
     setError(undefined);
     if (!Ctor) {
-      setError("当前环境没有语音识别。可以录音后交给 Grok 转写，或安装系统语音包。");
+      setError("Speech recognition is not available here. Record audio for Grok to transcribe, or install a system speech pack.");
       return;
     }
     const rec = new Ctor();
@@ -320,7 +320,7 @@ export function MediaStudio({
       rec.start();
       setRecording(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "无法打开麦克风");
+      setError(err instanceof Error ? err.message : "Could not open the microphone");
     }
   }
 
@@ -340,24 +340,24 @@ export function MediaStudio({
     mediaRef.current = undefined;
     setRecording(false);
     if (blob.size < 64) {
-      setError("没有录到有效音频");
+      setError("No usable audio was recorded");
       return;
     }
     const buf = await blob.arrayBuffer();
     const ext = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "m4a" : "webm";
     const file = await window.grok.saveAudio(buf, blob.type || "audio/webm", ext);
     if (!file) {
-      setError("保存录音失败");
+      setError("Could not save the recording");
       return;
     }
     await run(
       {
-        text: "请把附件音频转写成文字。只输出转写正文，不要解释。",
+        text: "Transcribe the attached audio into text. Output only the transcript, with no explanation.",
         attachments: [file],
         sessionRefs: [],
       },
       "voice",
-      "录音转写",
+      "Recording",
     );
   }
 
@@ -365,12 +365,12 @@ export function MediaStudio({
     const rows = await window.grok.pickFiles();
     const file = rows.find((row) => row.mimeType.startsWith("audio/") || /\.(wav|mp3|m4a|aac|ogg|webm|flac)$/i.test(row.name));
     if (!file) {
-      setError("请选择音频文件");
+      setError("Choose an audio file");
       return;
     }
     await run(
       {
-        text: "请把附件音频转写成文字。只输出转写正文，不要解释。",
+        text: "Transcribe the attached audio into text. Output only the transcript, with no explanation.",
         attachments: [file],
         sessionRefs: [],
       },
@@ -383,7 +383,7 @@ export function MediaStudio({
     const text = `${finalText}${liveText}`.trim();
     if (!text) return;
     try {
-      await window.grok.saveTranscript(text, "听写");
+      await window.grok.saveTranscript(text, "Dictation");
       setFinalText("");
       setLiveText("");
       void load();
@@ -416,13 +416,13 @@ export function MediaStudio({
     <div className="studio-page">
       <div className="studio-toolbar">
         <span className="studio-count">
-          {filtered.length} 项{query ? " · 已筛选" : ""}
+          {filtered.length} items{query ? " · filtered" : ""}
         </span>
         <input
           className="studio-search"
           value={query}
-          aria-label="搜索媒体资源"
-          placeholder="搜索提示词或文件名"
+          aria-label="Search media"
+          placeholder="Search prompts or file names"
           onChange={(event) => setQuery(event.target.value)}
         />
         <p className="studio-lead">{copy.hint}</p>
@@ -492,7 +492,7 @@ export function MediaStudio({
         {tab === "image" ? (
           <>
             <textarea
-              aria-label={`${copy.title}提示词`}
+              aria-label={`${copy.title} prompt`}
               className="studio-prompt"
               rows={2}
               value={imagePrompt}
@@ -523,13 +523,13 @@ export function MediaStudio({
               <button
                 className="icon-btn attach-btn"
                 type="button"
-                title="参考图"
+                title="Reference image"
                 onClick={() => void pickImage().then((row) => row && setImageRef(row))}
               >
                 <AttachIcon />
               </button>
               {imageRef ? (
-                <button className="studio-ref-thumb" type="button" title="移除参考" onClick={() => setImageRef(undefined)}>
+                <button className="studio-ref-thumb" type="button" title="Remove reference" onClick={() => setImageRef(undefined)}>
                   <img src={imageRef.preview || imageRef.path} alt="" />
                 </button>
               ) : null}
@@ -545,7 +545,7 @@ export function MediaStudio({
         {tab === "video" ? (
           <>
             <textarea
-              aria-label={`${copy.title}提示词`}
+              aria-label={`${copy.title} prompt`}
               className="studio-prompt"
               rows={2}
               value={videoPrompt}
@@ -576,13 +576,13 @@ export function MediaStudio({
               <button
                 className="icon-btn attach-btn"
                 type="button"
-                title="第一帧"
+                title="First frame"
                 onClick={() => void pickImage().then((row) => row && setVideoRef(row))}
               >
                 <AttachIcon />
               </button>
               {videoRef ? (
-                <button className="studio-ref-thumb" type="button" title="移除第一帧" onClick={() => setVideoRef(undefined)}>
+                <button className="studio-ref-thumb" type="button" title="Remove first frame" onClick={() => setVideoRef(undefined)}>
                   <img src={videoRef.preview || videoRef.path} alt="" />
                 </button>
               ) : null}
@@ -597,7 +597,7 @@ export function MediaStudio({
 
         {tab === "voice" ? (
           <>
-            <div className="studio-transcript">{transcript || "转写会显示在这里。"}</div>
+            <div className="studio-transcript">{transcript || "The transcript will appear here."}</div>
             <div className="studio-dock-row">
               <button
                 className={`studio-mic ${recording ? "on" : ""}`}
@@ -617,7 +617,7 @@ export function MediaStudio({
                   recording ? stopSpeech() : startSpeech();
                 }}
               >
-                {recording ? "正在听…" : hold ? "按住说话" : "开始听写"}
+                {recording ? "Listening..." : hold ? "Hold to talk" : "Start dictation"}
               </button>
               <button
                 className="btn ghost"
@@ -625,13 +625,13 @@ export function MediaStudio({
                 disabled={blocked}
                 onClick={() => void (recording && mediaRef.current ? stopTapeAndSend() : startTape())}
               >
-                {recording && mediaRef.current ? "停止并转写" : "录音转写"}
+                {recording && mediaRef.current ? "Stop & transcribe" : "Record & transcribe"}
               </button>
               <button className="btn ghost" type="button" disabled={blocked} onClick={() => void pickAudioFile()}>
-                上传音频
+                Upload audio
               </button>
               <button className="btn ghost" type="button" disabled={!transcript} onClick={() => void persistTranscript()}>
-                保存到资源库
+                Save to library
               </button>
               <button
                 className="btn primary"
@@ -641,18 +641,18 @@ export function MediaStudio({
                   onInsertText(transcript);
                 }}
               >
-                插入对话输入框
+                Insert into chat
               </button>
             </div>
           </>
         ) : null}
 
         {error ? <div className="error-banner">{error}</div> : null}
-        {blocked && !error ? <p className="studio-hint">正在生成，完成后会自动出现在资源库。对话仍在后台继续。</p> : null}
+        {blocked && !error ? <p className="studio-hint">Generating. Results appear in the library when done; the conversation continues in the background.</p> : null}
       </div>
 
       {viewer ? (
-        <Dialog title="资源预览" className="media-preview-panel" onClose={() => setViewer(undefined)}>
+        <Dialog title="Preview" className="media-preview-panel" onClose={() => setViewer(undefined)}>
           <div className="studio-lightbox-body" onClick={(event) => event.stopPropagation()}>
             <div className="studio-lightbox-stage">
               {viewer.kind === "video" ? (
@@ -664,16 +664,16 @@ export function MediaStudio({
               )}
             </div>
             <aside className="studio-lightbox-meta">
-              <strong>{viewer.kind === "voice" ? "转写" : "提示词"}</strong>
-              <p>{caption(viewer) || "没有记录提示词"}</p>
+              <strong>{viewer.kind === "voice" ? "Transcript" : "Prompt"}</strong>
+              <p>{caption(viewer) || "No prompt recorded"}</p>
               <em>{formatWhen(viewer.createdAt)}</em>
               <div className="studio-lightbox-actions">
                 <button className="btn ghost" type="button" onClick={() => void reusePrompt(viewer)}>
-                  再用此提示
+                  Reuse prompt
                 </button>
                 {viewer.kind !== "voice" ? (
                   <button className="btn ghost" type="button" onClick={() => void useAsRef(viewer)}>
-                    作为参考
+                    Use as reference
                   </button>
                 ) : (
                   <button
@@ -683,27 +683,27 @@ export function MediaStudio({
                       if (viewer.text) onInsertText(viewer.text);
                     }}
                   >
-                    插入输入框
+                    Insert into input
                   </button>
                 )}
                 {viewer.path ? (
                   <button className="btn ghost" type="button" onClick={() => void window.grok.exportMedia(viewer.path, viewer.name)}>
-                    下载
+                    Download
                   </button>
                 ) : null}
                 {viewer.path ? (
                   <button className="btn ghost" type="button" onClick={() => void window.grok.copyMedia(viewer.path)}>
-                    复制
+                    Copy
                   </button>
                 ) : null}
                 {viewer.path ? (
                   <button className="btn ghost" type="button" onClick={() => void window.grok.revealMedia(viewer.path)}>
-                    打开位置
+                    Show in folder
                   </button>
                 ) : null}
                 {viewer.sessionId ? (
                   <button className="btn ghost" type="button" onClick={() => onOpenSession(viewer.sessionId!, viewer.cwd)}>
-                    查看对话
+                    View conversation
                   </button>
                 ) : null}
                 <button
@@ -720,7 +720,7 @@ export function MediaStudio({
                     });
                   }}
                 >
-                  删除
+                  Delete
                 </button>
               </div>
             </aside>

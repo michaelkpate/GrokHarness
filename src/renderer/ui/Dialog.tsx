@@ -36,7 +36,7 @@ export function Dialog({ title, onClose, className = "", closeLabel, initialFocu
   return createPortal(
     <div className="settings-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className={`settings-panel ${className}`} ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={id}>
-        <header className="settings-head"><h2 id={id}>{title}</h2><button className="icon-btn" type="button" aria-label={closeLabel || `关闭${title}`} title="关闭" onClick={onClose}><X size={18} /></button></header>
+        <header className="settings-head"><h2 id={id}>{title}</h2><button className="icon-btn" type="button" aria-label={closeLabel || `Close ${title}`} title="Close" onClick={onClose}><X size={18} /></button></header>
         {children}
       </div>
     </div>, document.body,

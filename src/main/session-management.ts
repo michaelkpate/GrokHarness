@@ -9,8 +9,8 @@ export async function activeLocalSessionIds(): Promise<Set<string>> {
   const home = process.env.GROK_HOME?.trim() || join(homedir(), ".grok");
   let active: unknown;
   try { active = JSON.parse(await readFile(join(home, "active_sessions.json"), "utf8")); }
-  catch (err) { if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw new Error("无法核对正在运行的会话"); }
-  if (active !== undefined && !Array.isArray(active)) throw new Error("运行中会话记录格式无效");
+  catch (err) { if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw new Error("Unable to verify running conversations"); }
+  if (active !== undefined && !Array.isArray(active)) throw new Error("Invalid format in the running conversations record");
   return new Set(Array.isArray(active) ? active.map((row) => row?.session_id).filter((id): id is string => typeof id === "string") : []);
 }
 
@@ -33,7 +33,7 @@ export async function retireLocalSessions(rows: SessionSummary[]): Promise<{ mov
   const home = process.env.GROK_HOME?.trim() || join(homedir(), ".grok");
   const sourceRoot = await realpath(join(home, "sessions"));
   const active = await activeLocalSessionIds();
-  if (rows.some((row) => active.has(row.sessionId))) throw new Error("选中的会话或子代理正在运行，请取消选择后重试");
+  if (rows.some((row) => active.has(row.sessionId))) throw new Error("A selected conversation or subagent is running; deselect it and try again");
   const backupPath = join(home, "session-cleanup-backups", `${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`);
   await mkdir(join(backupPath, "sessions"), { recursive: true });
   const movedIds: string[] = [];
@@ -42,10 +42,10 @@ export async function retireLocalSessions(rows: SessionSummary[]): Promise<{ mov
   // Record recovery paths before the first move, including a partially completed batch.
   for (const row of rows) {
     const source = await resolveSessionDir(row.sessionId, row.cwd);
-    if (!source) { errors.push(`${row.title || row.sessionId}：找不到本地目录`); continue; }
+    if (!source) { errors.push(`${row.title || row.sessionId}: local folder not found`); continue; }
     const resolved = await realpath(source);
     const rel = relative(sourceRoot, resolved);
-    if (!rel || rel.startsWith("..") || isAbsolute(rel) || dirname(resolved) === sourceRoot) throw new Error("会话目录不在有效存储目录内");
+    if (!rel || rel.startsWith("..") || isAbsolute(rel) || dirname(resolved) === sourceRoot) throw new Error("Conversation folder is not inside a valid storage folder");
     manifest.push({ id: row.sessionId, source: resolved, destination: join(backupPath, "sessions", rel), title: row.title, moved: false });
   }
   const save = () => writeFile(join(backupPath, "manifest.json"), JSON.stringify({ createdAt: new Date().toISOString(), sourceRoot, sessions: manifest, errors }, null, 2) + "\n");
@@ -54,14 +54,14 @@ export async function retireLocalSessions(rows: SessionSummary[]): Promise<{ mov
     try {
       // The official local active-session registry is re-read for each move.
       const activeNow = await activeLocalSessionIds();
-      if (activeNow.has(entry.id)) throw new Error("会话正在运行，已跳过");
+      if (activeNow.has(entry.id)) throw new Error("Conversation is running, skipped");
       const resolved = await realpath(entry.source);
-      if (resolved !== entry.source) throw new Error("会话存储位置已改变，已跳过");
+      if (resolved !== entry.source) throw new Error("Conversation storage location changed, skipped");
       await mkdir(dirname(entry.destination), { recursive: true });
       await rename(entry.source, entry.destination);
       entry.moved = true;
       movedIds.push(entry.id);
-    } catch (err) { errors.push(`${entry.title || entry.id}：${err instanceof Error ? err.message : String(err)}`); }
+    } catch (err) { errors.push(`${entry.title || entry.id}: ${err instanceof Error ? err.message : String(err)}`); }
     await save();
   }
   return { movedIds, errors, backupPath };

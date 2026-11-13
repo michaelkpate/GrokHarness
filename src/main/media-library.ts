@@ -293,7 +293,7 @@ export async function listMediaLibrary(db: LocalDb, kind?: MediaKind): Promise<M
 
 export async function deleteMediaAsset(db: LocalDb, id: string): Promise<{ ok: boolean; error?: string }> {
   const row = db.hideMedia(id);
-  if (!row) return { ok: false, error: "找不到这个资源" };
+  if (!row) return { ok: false, error: "Asset not found" };
   if (row.path && existsSync(row.path) && isAllowedMediaPath(row.path)) {
     try {
       await unlink(row.path);
@@ -306,7 +306,7 @@ export async function deleteMediaAsset(db: LocalDb, id: string): Promise<{ ok: b
 
 export async function saveTranscript(db: LocalDb, text: string, prompt?: string): Promise<MediaAsset> {
   const body = text.trim();
-  if (!body) throw new Error("没有可保存的转写");
+  if (!body) throw new Error("No transcript to save");
   const dir = join(app.getPath("userData"), "transcripts");
   await mkdir(dir, { recursive: true });
   const id = randomUUID();
@@ -331,7 +331,7 @@ export async function saveTranscript(db: LocalDb, text: string, prompt?: string)
 
 export async function exportMediaFile(src: string, dest: string): Promise<void> {
   const full = resolve(src);
-  if (!isAllowedMediaPath(full) || !existsSync(full)) throw new Error("找不到源文件");
+  if (!isAllowedMediaPath(full) || !existsSync(full)) throw new Error("Source file not found");
   await copyFile(full, dest);
 }
 

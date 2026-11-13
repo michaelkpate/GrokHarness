@@ -53,10 +53,10 @@ async function fixture() {
 
 test('custom groups persist in SQLite and group removal keeps conversation directories and workspace', async () => {
   const { host, dir } = await fixture();
-  host.saveSessionGroup(undefined, '  研究  计划 ');
+  host.saveSessionGroup(undefined, '  Research  plan ');
   const id = host.getSnapshot().sessionOrganization.groups[0].id;
-  assert.equal(host.getSnapshot().sessionOrganization.groups[0].name, '研究 计划');
-  assert.throws(() => host.saveSessionGroup(undefined, '研究 计划'), /同名/);
+  assert.equal(host.getSnapshot().sessionOrganization.groups[0].name, 'Research plan');
+  assert.throws(() => host.saveSessionGroup(undefined, 'research PLAN'), /already exists/);
   await host.manageSessions([one, two], 'move', id);
   host.reorderSessions(customGroupKey(id), [two, one]);
   const reopened = new AgentHost(); await reopened.db.init();
@@ -64,8 +64,8 @@ test('custom groups persist in SQLite and group removal keeps conversation direc
   assert.equal(persisted.assignments[one], id);
   assert.equal(persisted.assignments[two], id);
   assert.deepEqual(reopened.db.getJson('sessionOrder', {})[customGroupKey(id)], [two, one]);
-  host.saveSessionGroup(id, '资料');
-  assert.equal(host.getSnapshot().sessionOrganization.groups[0].name, '资料');
+  host.saveSessionGroup(id, 'Notes');
+  assert.equal(host.getSnapshot().sessionOrganization.groups[0].name, 'Notes');
   host.removeSessionGroup(id);
   assert.deepEqual(host.getSnapshot().sessionOrganization, { groups: [], assignments: {} });
   assert.equal(JSON.parse(await readFile(join(dir(one), 'summary.json'))).info.cwd, cwd);
@@ -83,13 +83,13 @@ test('batch pin/archive use only selected main sessions and can be reversed', as
   await host.manageSessions([one], 'unpin');
   await host.manageSessions([one, two], 'unarchive');
   assert.equal(host.getSnapshot().sessions.filter(row => row.pinned || row.archived).length, 0);
-  await assert.rejects(host.manageSessions([one], 'move', 'missing'), /目标分组/);
-  await assert.rejects(host.manageSessions([one], 'invalid'), /未知会话操作/);
+  await assert.rejects(host.manageSessions([one], 'move', 'missing'), /Target group/);
+  await assert.rejects(host.manageSessions([one], 'invalid'), /Unknown conversation action/);
 });
 
 test('local batch deletion backs up parent and nested children byte-for-byte without ACP/network requests', async () => {
   const { host, dir } = await fixture();
-  host.saveSessionGroup(undefined, '待处理');
+  host.saveSessionGroup(undefined, 'To do');
   const id = host.getSnapshot().sessionOrganization.groups[0].id;
   await host.manageSessions([one], 'move', id);
   host.client = { connected: true, request: async () => { throw new Error('No request expected'); } };
@@ -115,7 +115,7 @@ test('running parent is skipped while an idle selection still deletes and the ac
   const result = await host.manageSessions([one, two], 'delete');
   assert.deepEqual(result.processedIds, [two]);
   assert.deepEqual(result.skippedIds, [one]);
-  assert.match(result.errors[0], /正在运行/);
+  assert.match(result.errors[0], /running/);
   assert.equal(host.getSnapshot().busy, true);
   assert.equal(host.getSnapshot().timeline[0].text, 'LIVE');
   assert.equal(JSON.parse(await readFile(join(dir(one), 'summary.json'))).info.id, one);
@@ -127,10 +127,10 @@ test('official registry protects an active child before any parent data is moved
   const result = await host.manageSessions([one, two], 'delete');
   assert.deepEqual(result.processedIds, [two]);
   assert.deepEqual(result.skippedIds, [one]);
-  assert.match(result.errors[0], /正在运行/);
+  assert.match(result.errors[0], /running/);
   for (const id of [one, child, nested]) assert.equal(JSON.parse(await readFile(join(dir(id), 'summary.json'))).info.id, id);
   await writeFile(join(home, 'active_sessions.json'), '{broken');
-  await assert.rejects(host.manageSessions([one], 'delete'), /无法核对/);
+  await assert.rejects(host.manageSessions([one], 'delete'), /Unable to verify/);
 });
 
 test('an idle current conversation closes before moving and is cleared afterwards', async () => {
@@ -164,7 +164,7 @@ test('invalid IDs and symlinked session directories cannot move data outside the
   await writeFile(join(outside, 'keep.txt'), 'KEEP');
   const linkId = '55555555-5555-4555-8555-555555555555';
   await symlink(outside, dir(linkId), process.platform === 'win32' ? 'junction' : 'dir');
-  await assert.rejects(retireLocalSessions([{ sessionId: linkId, cwd }]), /有效存储目录/);
+  await assert.rejects(retireLocalSessions([{ sessionId: linkId, cwd }]), /valid storage folder/);
   assert.equal(await readFile(join(outside, 'keep.txt'), 'utf8'), 'KEEP');
   assert.equal((await readdir(join(home, 'sessions'))).length, 1);
 });

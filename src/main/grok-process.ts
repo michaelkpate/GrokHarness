@@ -38,7 +38,7 @@ function waitPort(host: string, port: number, timeoutMs: number, signal?: AbortS
         socket?.destroy();
         if (finished) return;
         if (Date.now() - start > timeoutMs) {
-          finish(new Error(`等待 grok agent 监听 ${host}:${port} 超时`));
+          finish(new Error(`Timed out waiting for grok agent to listen on ${host}:${port}`));
         } else {
           retry = setTimeout(tryOnce, 120);
         }
@@ -55,7 +55,7 @@ function pickFreePort(): Promise<number> {
       const addr = server.address();
       if (!addr || typeof addr === "string") {
         server.close();
-        reject(new Error("无法分配本地端口"));
+        reject(new Error("Could not allocate a local port"));
         return;
       }
       const port = addr.port;
@@ -99,7 +99,7 @@ export async function startGrokServe(binary: string, signal?: AbortSignal): Prom
     child.once("exit", (code, signal) => {
       reject(
         new Error(
-          `grok agent 在就绪前退出 (code=${code}, signal=${signal})\n${stderr.slice(-2000)}`,
+          `grok agent exited before it was ready (code=${code}, signal=${signal})\n${stderr.slice(-2000)}`,
         ),
       );
     });

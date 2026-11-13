@@ -8,10 +8,10 @@ import { Dialog } from "./ui/Dialog";
 import type { Appearance } from "./ui/appearance";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  "桌面外观": Monitor, "账户": CircleUserRound, "权限与批准": ShieldCheck, "模型": BrainCircuit,
-  "外观": Palette, "滚动": ScrollText, "功能": Blocks, "会话": MessagesSquare,
-  "工具": Wrench, "沙箱": Box, "Worktree": GitBranch, "通知": Bell,
-  "兼容扫描": ScanLine, "CLI": Terminal,
+  "Appearance": Monitor, "Account": CircleUserRound, "Permissions": ShieldCheck, "Models": BrainCircuit,
+  "Display": Palette, "Scrolling": ScrollText, "Features": Blocks, "Conversation": MessagesSquare,
+  "Tools": Wrench, "Sandbox": Box, "Worktree": GitBranch, "Notifications": Bell,
+  "Compatibility": ScanLine, "CLI": Terminal,
 };
 
 const MODEL_KEYS = new Set<keyof GrokSettings>([
@@ -39,7 +39,7 @@ function FieldControl({
     const allowEmpty = field.key !== "defaultModel";
     return (
       <select className="chip settings-input" value={current} onChange={(event) => onChange(event.target.value)}>
-        {allowEmpty ? <option value="">跟随默认</option> : null}
+        {allowEmpty ? <option value="">Use default</option> : null}
         {!known && current ? <option value={current}>{current}</option> : null}
         {models.map((model) => (
           <option key={model.modelId} value={model.modelId}>
@@ -73,7 +73,7 @@ function FieldControl({
         type="number"
         min={field.min}
         max={field.max}
-        placeholder={field.optional ? "默认" : undefined}
+        placeholder={field.optional ? "Default" : undefined}
         value={empty ? "" : Number(value)}
         onChange={(event) => {
           const text = event.target.value;
@@ -87,7 +87,7 @@ function FieldControl({
     <input
       className="settings-input"
       type="text"
-      placeholder={field.kind === "list" ? "逗号分隔" : undefined}
+      placeholder={field.kind === "list" ? "Comma-separated" : undefined}
       value={String(value ?? "")}
       onChange={(event) => onChange(event.target.value)}
     />
@@ -118,10 +118,10 @@ export function SettingsPanel({
   onUpdate: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("桌面外观");
+  const [category, setCategory] = useState("Appearance");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const content = useRef<HTMLDivElement>(null);
-  const connectionLabel = account.connection === "ready" ? "已连接" : account.connection === "starting" ? "连接中" : "未连接";
+  const connectionLabel = account.connection === "ready" ? "Connected" : account.connection === "starting" ? "Connecting" : "Not connected";
   const usedPercent = account.quota?.usedPercent;
   const usage = usedPercent != null && Number.isFinite(usedPercent) ? Math.min(100, Math.max(0, Math.round(usedPercent))) : undefined;
   const needle = query.trim().toLowerCase();
@@ -137,42 +137,42 @@ export function SettingsPanel({
   }, [needle]);
 
   return (
-    <Dialog title="设置" className="preferences-panel" onClose={onClose}>
+    <Dialog title="Settings" className="preferences-panel" onClose={onClose}>
       <div className="preferences-layout">
-        <nav className="preferences-nav" aria-label="设置分类">
-          {["桌面外观", "账户", ...SETTINGS_SECTIONS.map((section) => section.title)].map((title) => {
+        <nav className="preferences-nav" aria-label="Settings categories">
+          {["Appearance", "Account", ...SETTINGS_SECTIONS.map((section) => section.title)].map((title) => {
             const Icon = CATEGORY_ICONS[title] ?? Settings2;
             return <button type="button" key={title} className={`preferences-nav-row ${category === title && !needle ? "on" : ""}`} aria-current={category === title && !needle ? "page" : undefined} onClick={() => { setCategory(title); setQuery(""); if (content.current) content.current.scrollTop = 0; }}>
               <Icon size={16} /><span>{title}</span>
             </button>
           })}
           <div className="preferences-nav-links">
-            <button onClick={onDesktop}>应用与更新<ArrowUpRight size={14} /></button>
-            <button onClick={onUsage}>用量<ArrowUpRight size={14} /></button>
-            <button onClick={onUpdate}>Grok Build 更新<ArrowUpRight size={14} /></button>
+            <button onClick={onDesktop}>App and updates<ArrowUpRight size={14} /></button>
+            <button onClick={onUsage}>Usage<ArrowUpRight size={14} /></button>
+            <button onClick={onUpdate}>Grok Build updates<ArrowUpRight size={14} /></button>
           </div>
         </nav>
         <div className="preferences-content" ref={content}>
-          <div className="preferences-search"><Search size={16} /><input type="search" value={query} placeholder="搜索所有设置" aria-label="搜索所有设置" onChange={(event) => setQuery(event.target.value)} /></div>
-          {!needle && category === "桌面外观" ? <>
-            <h3 className="preferences-title">桌面外观</h3><p className="preferences-description">调整 Grok Harness 的显示方式。</p>
+          <div className="preferences-search"><Search size={16} /><input type="search" value={query} placeholder="Search all settings" aria-label="Search all settings" onChange={(event) => setQuery(event.target.value)} /></div>
+          {!needle && category === "Appearance" ? <>
+            <h3 className="preferences-title">Appearance</h3><p className="preferences-description">Adjust how Grok Harness looks.</p>
             <section className="settings-section">
-              <div className="settings-row"><span><strong>主题</strong><em>选择浅色、深色或跟随系统。</em></span><div className="theme-options">{([['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={appearance.theme === value} className={appearance.theme === value ? "on" : ""} onClick={() => onAppearance({ ...appearance, theme: value })}>{label}</button>)}</div></div>
-              <label className="settings-row"><span><strong>对话字号</strong><em>用于消息正文和输入框。</em></span><select className="settings-input" value={appearance.textSize} onChange={(event) => onAppearance({ ...appearance, textSize: Number(event.target.value) })}>{[13, 14, 15, 16].map((size) => <option key={size} value={size}>{size} px</option>)}</select></label>
-              <label className="settings-row"><span><strong>侧栏宽度</strong><em>也可以拖动侧栏右边缘调整。</em></span><input className="settings-input" type="number" min={280} max={520} step={10} value={appearance.sidebarWidth} onChange={(event) => { const width = Number(event.target.value); if (width >= 280 && width <= 520) onAppearance({ ...appearance, sidebarWidth: width }); }} /></label>
-              <label className="settings-row"><span><strong>紧凑模式</strong><em>缩小对话中的垂直间距。</em></span><input role="switch" className="settings-switch" type="checkbox" checked={settings.compactMode} onChange={(event) => onChange("compactMode", event.target.checked)} /></label>
+              <div className="settings-row"><span><strong>Theme</strong><em>Light, dark, or match the system.</em></span><div className="theme-options">{([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={appearance.theme === value} className={appearance.theme === value ? "on" : ""} onClick={() => onAppearance({ ...appearance, theme: value })}>{label}</button>)}</div></div>
+              <label className="settings-row"><span><strong>Text size</strong><em>Used for message text and the input box.</em></span><select className="settings-input" value={appearance.textSize} onChange={(event) => onAppearance({ ...appearance, textSize: Number(event.target.value) })}>{[13, 14, 15, 16].map((size) => <option key={size} value={size}>{size} px</option>)}</select></label>
+              <label className="settings-row"><span><strong>Sidebar width</strong><em>You can also drag the sidebar's right edge.</em></span><input className="settings-input" type="number" min={280} max={520} step={10} value={appearance.sidebarWidth} onChange={(event) => { const width = Number(event.target.value); if (width >= 280 && width <= 520) onAppearance({ ...appearance, sidebarWidth: width }); }} /></label>
+              <label className="settings-row"><span><strong>Compact mode</strong><em>Tighter vertical spacing in conversations.</em></span><input role="switch" className="settings-switch" type="checkbox" checked={settings.compactMode} onChange={(event) => onChange("compactMode", event.target.checked)} /></label>
             </section>
-            <div className="appearance-preview"><span className="preview-user">帮我整理这个项目</span><p>可以。我会先查看项目结构和当前工作区。</p><div><span className="status-dot ready" />Grok · 已就绪</div></div>
+            <div className="appearance-preview"><span className="preview-user">Help me tidy up this project</span><p>Sure. I'll start with the project structure and the current workspace.</p><div><span className="status-dot ready" />Grok · Ready</div></div>
           </> : null}
-          {!needle && category === "账户" ? <>
-            <h3 className="preferences-title">账户</h3><p className="preferences-description">Grok Build 提供的本机账户状态。</p>
-            <section className="settings-section account-settings" aria-label="账户信息">
-              <div className="account-profile"><span className="avatar">{account.email?.[0]?.toUpperCase() || "G"}</span><span className="account-profile-copy"><strong>{account.email || "Grok 账户"}</strong><small>{account.plan || account.quota?.plan || "暂无套餐信息"}</small></span><span className={`account-connection ${account.connection}`}><i />{connectionLabel}</span></div>
-              <div className="settings-row"><span><strong>当前模型</strong></span><span className="account-value">{account.modelName || "—"}</span></div>
-              <div className="settings-row"><span><strong>Grok Build 版本</strong></span><span className="account-value">{account.agentVersion || "—"}</span></div>
-              <div className="settings-row"><span><strong>额度使用</strong></span><span className="account-value account-usage">{usage == null ? "暂无数据" : <><span>{usage}%</span><span className="account-usage-track" role="progressbar" aria-label="额度使用" aria-valuemin={0} aria-valuemax={100} aria-valuenow={usage}><i style={{ width: `${usage}%` }} /></span></>}</span></div>
-              <button type="button" className="settings-action-row" onClick={onDesktop}><span>管理登录与应用更新</span><ChevronRight size={16} /></button>
-              <button type="button" className="settings-action-row" onClick={onUsage}><span>查看本机用量</span><ChevronRight size={16} /></button>
+          {!needle && category === "Account" ? <>
+            <h3 className="preferences-title">Account</h3><p className="preferences-description">Local account status from Grok Build.</p>
+            <section className="settings-section account-settings" aria-label="Account details">
+              <div className="account-profile"><span className="avatar">{account.email?.[0]?.toUpperCase() || "G"}</span><span className="account-profile-copy"><strong>{account.email || "Grok account"}</strong><small>{account.plan || account.quota?.plan || "No plan info"}</small></span><span className={`account-connection ${account.connection}`}><i />{connectionLabel}</span></div>
+              <div className="settings-row"><span><strong>Current model</strong></span><span className="account-value">{account.modelName || "—"}</span></div>
+              <div className="settings-row"><span><strong>Grok Build version</strong></span><span className="account-value">{account.agentVersion || "—"}</span></div>
+              <div className="settings-row"><span><strong>Quota used</strong></span><span className="account-value account-usage">{usage == null ? "No data" : <><span>{usage}%</span><span className="account-usage-track" role="progressbar" aria-label="Quota used" aria-valuemin={0} aria-valuemax={100} aria-valuenow={usage}><i style={{ width: `${usage}%` }} /></span></>}</span></div>
+              <button type="button" className="settings-action-row" onClick={onDesktop}><span>Manage sign-in and app updates</span><ChevronRight size={16} /></button>
+              <button type="button" className="settings-action-row" onClick={onUsage}><span>View local usage</span><ChevronRight size={16} /></button>
             </section>
           </> : null}
           {(needle ? sections : sections.filter((section) => section.title === category)).map((section) => (
@@ -196,8 +196,8 @@ export function SettingsPanel({
             </div>
           </section>
         ))}
-          {needle && !sections.length ? <div className="panel-empty">没有匹配的设置<span>试试功能或配置项名称。</span></div> : null}
-          {(needle || (category !== "桌面外观" && category !== "账户")) ? <label className="advanced-toggle"><input type="checkbox" checked={showAdvanced} onChange={(event) => setShowAdvanced(event.target.checked)} />显示配置项说明</label> : null}
+          {needle && !sections.length ? <div className="panel-empty">No matching settings<span>Try a feature or config key name.</span></div> : null}
+          {(needle || (category !== "Appearance" && category !== "Account")) ? <label className="advanced-toggle"><input type="checkbox" checked={showAdvanced} onChange={(event) => setShowAdvanced(event.target.checked)} />Show config keys</label> : null}
         </div>
       </div>
     </Dialog>

@@ -118,9 +118,9 @@ function asCents(value: unknown): number | undefined {
 function periodLabel(value: unknown): string | undefined {
   const text = asString(value)?.toUpperCase() ?? "";
   if (!text) return undefined;
-  if (text.includes("WEEK")) return "本周";
-  if (text.includes("MONTH")) return "本月";
-  if (text.includes("DAY")) return "今日";
+  if (text.includes("WEEK")) return "This week";
+  if (text.includes("MONTH")) return "This month";
+  if (text.includes("DAY")) return "Today";
   return undefined;
 }
 

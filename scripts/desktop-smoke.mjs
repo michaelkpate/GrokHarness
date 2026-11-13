@@ -35,7 +35,7 @@ async function check(mode) {
     if (mode === "missing") {
       assert.equal(state.cli.installed, false);
       await page.getByRole("dialog", { name: "Grok-Harness" }).waitFor();
-      await page.getByRole("button", { name: "安装 Grok CLI" }).waitFor();
+      await page.getByRole("button", { name: "Install Grok CLI" }).waitFor();
     } else {
       assert.equal(state.cli.installed, true);
       assert.equal(state.cli.authenticated, true);
@@ -49,11 +49,11 @@ async function check(mode) {
       assert.ok(backendPid > 0, "App-owned Grok backend must exist");
       await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send("desktop:open"));
       await page.getByRole("dialog", { name: "Grok-Harness" }).waitFor();
-      await page.getByRole("button", { name: "检查更新", exact: true }).click();
+      await page.getByRole("button", { name: "Check for updates", exact: true }).click();
       await page.waitForFunction(async () => (await window.grok.desktop.getState()).update.phase !== "checking", null, { timeout: 25_000 });
     }
     await page.screenshot({ path: join(output, `${mode}-desktop.png`) });
-    await page.getByRole("button", { name: "关闭桌面应用面板" }).click();
+    await page.getByRole("button", { name: "Close desktop app panel" }).click();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(880, 560));
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send("desktop:open"));
     await page.getByRole("dialog", { name: "Grok-Harness" }).waitFor();

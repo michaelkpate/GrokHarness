@@ -57,7 +57,7 @@ export function ModelEffortPicker({
     ? currentEffort
       ? `${selected.name} · ${currentEffort}`
       : selected.name
-    : currentId || "模型";
+    : currentId || "Model";
 
   useLayoutEffect(() => {
     if (!open) {
@@ -116,7 +116,7 @@ export function ModelEffortPicker({
         disabled={disabled}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="模型和思考长度"
+        title="Model and effort"
         onClick={() => setOpen((value) => !value)}
       >
         <span className="model-effort-label">{label}</span>
@@ -128,14 +128,14 @@ export function ModelEffortPicker({
               ref={popRef}
               className="model-effort-pop"
               role="dialog"
-              aria-label="选择模型和思考长度"
+              aria-label="Choose model and effort"
               style={box ? { top: box.top, left: box.left, width: box.width } : { visibility: "hidden" }}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="model-effort-kicker">模型</div>
+              <div className="model-effort-kicker">Model</div>
               <div className="model-effort-list">
                 {models.length === 0 ? (
-                  <div className="model-effort-empty">还没有可用模型</div>
+                  <div className="model-effort-empty">No models available yet</div>
                 ) : (
                   models.map((model) => {
                     const active = model.modelId === currentId;
@@ -155,8 +155,8 @@ export function ModelEffortPicker({
               </div>
               {efforts.length > 0 ? (
                 <div className="model-effort-thinking">
-                  <div className="model-effort-kicker">思考长度</div>
-                  <div className="effort-seg" role="radiogroup" aria-label="思考长度">
+                  <div className="model-effort-kicker">Effort</div>
+                  <div className="effort-seg" role="radiogroup" aria-label="Effort">
                     {efforts.map((item) => (
                       <button
                         key={item}

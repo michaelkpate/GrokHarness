@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import type { TokenUsageSummary } from "../shared/types";
 import { formatTokens } from "../shared/step-stats";
 
-const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function addDays(day: Date, count: number): Date {
   const next = new Date(day);
@@ -79,7 +80,7 @@ export function UsagePanel({
     grid.weeks.forEach((week, index) => {
       const month = week[0]?.date.getMonth() ?? -1;
       if (month !== last) {
-        labels.push({ index, label: `${month + 1}月` });
+        labels.push({ index, label: MONTHS[month] ?? "" });
         last = month;
       }
     });
@@ -87,24 +88,24 @@ export function UsagePanel({
   }, [grid.weeks]);
 
   return (
-    <Dialog title="用量" className="usage-panel" onClose={onClose}>
-        <p className="settings-lead">按天统计本机 Grok-Harness 对话里记录到的 token。颜色越深，当天用量越高。</p>
+    <Dialog title="Usage" className="usage-panel" onClose={onClose}>
+        <p className="settings-lead">Daily tokens recorded in Grok-Harness conversations on this computer. Darker cells mean more usage that day.</p>
         <div className="usage-kpis">
           <div>
             <strong>{formatTokens(usage.today) || "0"}</strong>
-            <span>今天</span>
+            <span>Today</span>
           </div>
           <div>
             <strong>{formatTokens(grid.weekTokens) || "0"}</strong>
-            <span>近 7 天</span>
+            <span>Last 7 days</span>
           </div>
           <div>
             <strong>{formatTokens(grid.monthTokens) || "0"}</strong>
-            <span>近 30 天</span>
+            <span>Last 30 days</span>
           </div>
           <div>
             <strong>{formatTokens(usage.total) || "0"}</strong>
-            <span>累计</span>
+            <span>All time</span>
           </div>
         </div>
         <div className="usage-heat">
@@ -138,13 +139,13 @@ export function UsagePanel({
             </div>
           </div>
           <div className="usage-legend">
-            <span>少</span>
+            <span>Less</span>
             <i className="usage-cell lv0" />
             <i className="usage-cell lv1" />
             <i className="usage-cell lv2" />
             <i className="usage-cell lv3" />
             <i className="usage-cell lv4" />
-            <span>多</span>
+            <span>More</span>
           </div>
         </div>
     </Dialog>

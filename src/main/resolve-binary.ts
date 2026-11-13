@@ -30,6 +30,6 @@ export function resolveGrokBinary(): string {
   }
 
   throw new Error(
-    "找不到 grok 可执行文件。请先安装官方 CLI，或设置 GROK_BINARY 指向 grok.exe。",
+    "grok executable not found. Install the official CLI first, or set GROK_BINARY to point to grok.exe.",
   );
 }

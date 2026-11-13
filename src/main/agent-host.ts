@@ -459,7 +459,7 @@ export class AgentHost {
           id: randomUUID(),
           kind: "system",
           tone: "info",
-          text: `Grok Build 已更新到 ${info.currentVersion}。上一轮对话已中断。`,
+          text: `Grok Build updated to ${info.currentVersion}. The previous turn was interrupted.`,
           at: Date.now(),
         });
       }
@@ -675,12 +675,12 @@ export class AgentHost {
 
   saveSessionGroup(id: string | undefined, name: string): void {
     const clean = cleanGroupName(name);
-    if (!clean) throw new Error("请输入分组名称");
+    if (!clean) throw new Error("Enter a group name");
     const organization = normalizeOrganization(this.snapshot.sessionOrganization);
-    if (organization.groups.some((group) => group.id !== id && group.name.toLocaleLowerCase() === clean.toLocaleLowerCase())) throw new Error("已经有同名分组");
+    if (organization.groups.some((group) => group.id !== id && group.name.toLocaleLowerCase() === clean.toLocaleLowerCase())) throw new Error("A group with this name already exists");
     if (id) {
       const group = organization.groups.find((group) => group.id === id);
-      if (!group) throw new Error("找不到分组");
+      if (!group) throw new Error("Group not found");
       group.name = clean;
     } else {
       const groupId = randomUUID();
@@ -702,15 +702,15 @@ export class AgentHost {
   }
 
   async manageSessions(ids: string[], action: SessionBatchAction, groupId?: string): Promise<SessionBatchResult> {
-    if (this.sessionManagementBusy) throw new Error("上一批会话操作还未完成");
-    if (!["pin", "unpin", "archive", "unarchive", "move", "delete"].includes(action)) throw new Error("未知会话操作");
+    if (this.sessionManagementBusy) throw new Error("The previous conversation action has not finished yet");
+    if (!["pin", "unpin", "archive", "unarchive", "move", "delete"].includes(action)) throw new Error("Unknown conversation action");
     this.sessionManagementBusy = true;
     try {
       await this.loadLocalSessions();
       const requested = [...new Set(ids)].slice(0, 2000);
       const rows = this.snapshot.sessions.filter((row) => requested.includes(row.sessionId) && isMainSession(row));
       const organization = normalizeOrganization(this.snapshot.sessionOrganization);
-      if (action === "move" && groupId && !organization.groups.some((group) => group.id === groupId)) throw new Error("目标分组不存在");
+      if (action === "move" && groupId && !organization.groups.some((group) => group.id === groupId)) throw new Error("Target group does not exist");
       const processedIds: string[] = [];
       const errors: string[] = [];
       let backupPath: string | undefined;
@@ -719,7 +719,7 @@ export class AgentHost {
         const idle = rows.filter((row) => {
           const tree = collectSessionTree(this.snapshot.sessions, [row.sessionId]);
           const running = tree.some((child) => registered.has(child.sessionId) || child.sessionId === this.loadingSessionId || child.running || (child.sessionId === this.snapshot.sessionId && this.snapshot.busy));
-          if (running) errors.push(`${row.title || row.sessionId}：正在运行或加载，已跳过`);
+          if (running) errors.push(`${row.title || row.sessionId}: running or loading, skipped`);
           return !running;
         });
         if (idle.length) {
@@ -834,7 +834,7 @@ export class AgentHost {
     }
     this.patch({
       sessionId: undefined,
-      sessionTitle: "新对话",
+      sessionTitle: "New chat",
       timeline: [],
       permission: undefined,
       busy: false,
@@ -1072,7 +1072,7 @@ export class AgentHost {
       onError: (err) => this.fail(err.message),
       onClose: (code, reason) => {
         if (this.snapshot.connection === "ready") {
-          this.fail(`agent 连接关闭 (${code}) ${reason}`.trim());
+          this.fail(`Agent connection closed (${code}) ${reason}`.trim());
         }
       },
     });
@@ -1170,7 +1170,7 @@ export class AgentHost {
         }),
       );
       const sessionId = asString(created?.sessionId);
-      if (!sessionId) throw new Error("session/new 没有返回 sessionId");
+      if (!sessionId) throw new Error("session/new did not return a sessionId");
       this.db.markRead(sessionId, Date.now());
       const createdMeta = asRecord(created?._meta);
       this.patch({
@@ -1179,7 +1179,7 @@ export class AgentHost {
         workspace: cwd,
         alwaysApprove,
         sessionMode: mode,
-        sessionTitle: "新会话",
+        sessionTitle: "New chat",
         commands: mergeSlashCommands(
           this.snapshot.commands,
           parseSlashCommands(created?.availableCommands),
@@ -1264,7 +1264,7 @@ export class AgentHost {
       hits.push({
         id: `session:${session.sessionId}`,
         kind: "session",
-        label: session.title || "未命名对话",
+        label: session.title || "Untitled chat",
         detail: session.cwd ? cwdLabel(session.cwd) : session.sessionId.slice(0, 8),
         sessionId: session.sessionId,
         cwd: session.cwd,
@@ -1402,7 +1402,7 @@ export class AgentHost {
     this.ignoreUpdates = false;
     const client = this.client;
     const sessionId = this.snapshot.sessionId;
-    if (!client || !sessionId) throw new Error("还没有就绪的会话");
+    if (!client || !sessionId) throw new Error("No conversation is ready yet");
     const trimmed = text.trim();
     const files: PromptAttachment[] = [];
     const seen = new Set<string>();
@@ -1469,14 +1469,14 @@ export class AgentHost {
     } finally {
       if (epoch !== this.promptEpoch) return;
       this.patch({ busy: false });
-      this.desktopNotify("turn_complete", "本轮已完成");
+      this.desktopNotify("turn_complete", "Turn complete");
       if (!this.drainingQueue) void this.drainQueue();
     }
   }
 
   private async formatSessionNote(ref: SessionRef): Promise<string | undefined> {
     const known = this.snapshot.sessions.find((session) => session.sessionId === ref.sessionId);
-    const title = ref.title || known?.title || "未命名对话";
+    const title = ref.title || known?.title || "Untitled chat";
     const cwd = ref.cwd || known?.cwd;
     const items = await loadSessionTranscript(ref.sessionId, cwd);
     const lines: string[] = [];
@@ -1530,7 +1530,7 @@ export class AgentHost {
     try {
       await client.request("session/cancel", { sessionId }, 8_000);
     } catch {
-      /* agent 可能已经停了 */
+      /* the agent may already have stopped */
     }
   }
 
@@ -1569,7 +1569,7 @@ export class AgentHost {
     this.patch({
       workspace,
       sessionId,
-      sessionTitle: known?.title ?? "未命名对话",
+      sessionTitle: known?.title ?? "Untitled chat",
       timeline,
       permission: undefined,
       busy: false,
@@ -1714,7 +1714,7 @@ export class AgentHost {
     if (kind === "turn_completed") {
       const reason = asString(update.stop_reason) ?? asString(update.stopReason);
       if (reason === "error") {
-        this.pushItem({ id: randomUUID(), kind: "system", tone: "error", text: asString(update.agent_result) ?? asString(update.agentResult) ?? "Grok 本轮执行失败" });
+        this.pushItem({ id: randomUUID(), kind: "system", tone: "error", text: asString(update.agent_result) ?? asString(update.agentResult) ?? "Grok failed to complete this turn" });
       }
       this.finishStreaming();
       return;
@@ -1882,7 +1882,7 @@ export class AgentHost {
     if (method === "x.ai/folder_trust/request") {
       return { trusted: true, outcome: "allow" };
     }
-    throw new Error(`未处理的反向请求: ${method}`);
+    throw new Error(`Unhandled reverse request: ${method}`);
   }
 
   private async handlePermission(params: JsonValue | undefined): Promise<JsonValue> {
@@ -1913,7 +1913,7 @@ export class AgentHost {
     const request: PermissionRequest = {
       requestId: randomUUID(),
       sessionId: asString(rec.sessionId) ?? this.snapshot.sessionId ?? "",
-      title: asString(toolCall.title) ?? asString(toolCall.toolName) ?? "需要批准",
+      title: asString(toolCall.title) ?? asString(toolCall.toolName) ?? "Approval required",
       toolKind: asString(toolCall.kind),
       toolCallId: asString(toolCall.toolCallId),
       rawInput: toolCall.rawInput ?? rec.rawInput,

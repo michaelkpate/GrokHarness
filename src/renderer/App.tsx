@@ -64,18 +64,18 @@ const empty: AppSnapshot = {
 };
 
 const GROUP_SORT_OPTIONS: { id: GroupSort; label: string }[] = [
-  { id: "custom", label: "自定义排列" },
-  { id: "recent", label: "最近活动" },
-  { id: "name-asc", label: "名称 A→Z" },
-  { id: "name-desc", label: "名称 Z→A" },
-  { id: "count", label: "会话数量" },
+  { id: "custom", label: "Custom order" },
+  { id: "recent", label: "Recent activity" },
+  { id: "name-asc", label: "Name A→Z" },
+  { id: "name-desc", label: "Name Z→A" },
+  { id: "count", label: "Conversation count" },
 ];
 
 const SESSION_SORT_OPTIONS: { id: SessionSort; label: string }[] = [
-  { id: "custom", label: "自定义排列" },
-  { id: "recent", label: "最近活动" },
-  { id: "title-asc", label: "名称 A→Z" },
-  { id: "title-desc", label: "名称 Z→A" },
+  { id: "custom", label: "Custom order" },
+  { id: "recent", label: "Recent activity" },
+  { id: "title-asc", label: "Name A→Z" },
+  { id: "title-desc", label: "Name Z→A" },
 ];
 
 const DRAG_MIME = "application/x-grok-sidebar";
@@ -267,7 +267,7 @@ function MessageExtras({
       )}
       {sessionRefs?.map((item) => (
         <div className="attach-chip static session" key={item.sessionId}>
-          <span className="attach-kind">对话</span>
+          <span className="attach-kind">Conversation</span>
           <span className="attach-name">{item.title}</span>
         </div>
       ))}
@@ -292,27 +292,27 @@ function PromptQueueBar({
 }) {
   if (!queue.length) return null;
   const hint = holding
-    ? "后台任务结束后发送 · 空回车立即发送"
+    ? "Sends after background tasks · Enter on empty sends now"
     : followUp === "steer"
-      ? "将在下一空隙注入"
-      : "本轮结束后发送";
+      ? "Will steer in at the next gap"
+      : "Sends after this turn";
   return (
     <div className="prompt-queue">
       <div className="prompt-queue-head">
         <span>
-          追问 {queue.length}
-          {combine ? " · 合并" : ""}
+          Follow-ups {queue.length}
+          {combine ? " · combined" : ""}
         </span>
         <em>{hint}</em>
       </div>
       {queue.map((item) => (
         <div className="prompt-queue-row" key={item.id}>
-          <span className="prompt-queue-text">{item.text || (item.attachments.length ? "附件" : "追问")}</span>
+          <span className="prompt-queue-text">{item.text || (item.attachments.length ? "Attachment" : "Follow-up")}</span>
           <button type="button" className="text-action" onClick={() => onSendNow(item.id)}>
-            立即发送
+            Send now
           </button>
           <button type="button" className="text-action" onClick={() => onRemove(item.id)}>
-            移除
+            Remove
           </button>
         </div>
       ))}
@@ -518,12 +518,12 @@ function toolRole(item: Extract<TimelineItem, { kind: "tool" }>): ToolRole {
 }
 
 function thoughtLabel(item: Extract<TimelineItem, { kind: "thought" }>, live: boolean): string {
-  if (item.interrupted) return "思考已中断";
+  if (item.interrupted) return "Thinking interrupted";
   const duration = formatDuration(
     live && item.at != null ? Math.max(0, Date.now() - item.at) : item.durationMs,
   );
-  if (live) return duration ? `正在思考 · ${duration}` : "正在思考…";
-  return duration ? `思考 · ${duration}` : "思考";
+  if (live) return duration ? `Thinking · ${duration}` : "Thinking...";
+  return duration ? `Thought · ${duration}` : "Thinking";
 }
 
 function toolLabel(item: Extract<TimelineItem, { kind: "tool" }>): { role: ToolRole; text: string; added?: number; removed?: number } {
@@ -571,7 +571,7 @@ function TimelineItemView({
     return (
       <div className="bubble user">
         <div className="kicker">
-          你
+          You
           <Stamp at={item.at} show={showTimestamps} />
         </div>
         <div className="md">
@@ -588,7 +588,7 @@ function TimelineItemView({
   if (item.kind === "interrupt") {
     return (
       <div className="turn-interrupt" role="status">
-        <span>已中断</span>
+        <span>Interrupted</span>
         {item.durationMs != null ? <em>{formatElapsedClock(item.durationMs)}</em> : null}
       </div>
     );
@@ -600,7 +600,7 @@ function TimelineItemView({
     return (
       <div className={`bubble assistant${item.interrupted ? " interrupted" : ""}`}>
         <div className="kicker">
-          {item.interrupted ? "Grok · 已中断" : "Grok"}
+          {item.interrupted ? "Grok · Interrupted" : "Grok"}
           <Stamp at={item.at} show={showTimestamps} />
         </div>
         <div className="md">
@@ -632,7 +632,7 @@ function TimelineItemView({
   return (
     <div className="bubble">
       <div className={`kicker ${item.tone === "error" ? "thought" : ""}`}>
-        {item.tone === "error" ? "错误" : "系统"}
+        {item.tone === "error" ? "Error" : "System"}
         <Stamp at={item.at} show={showTimestamps} />
       </div>
       <div className="error-banner">{item.text}</div>
@@ -682,12 +682,12 @@ function ThoughtRow({ item }: { item: Extract<TimelineItem, { kind: "thought" }>
   return (
     <div className={`op-item thought${item.interrupted ? " interrupted" : ""}${live ? " live" : ""}`}>
       <button type="button" className={`op-row thought thought-toggle${expanded ? " expanded" : ""}`} aria-expanded={expanded} onClick={() => { follow.current = true; setExpanded((value) => !value); }}>
-        {row}<span className="thought-action">{expanded ? "收起" : "展开"}</span>
+        {row}<span className="thought-action">{expanded ? "Collapse" : "Expand"}</span>
       </button>
       {expanded ? (
         <div className="thought-inline thought-full md">{isBlank(item.text) ? <StreamingDots /> : <Markdown remarkPlugins={[remarkGfm]}>{item.text}</Markdown>}</div>
       ) : (
-        <div className="thought-preview" ref={preview} tabIndex={0} aria-label="思考滚动预览" onWheel={(event) => { if (event.deltaY < 0) follow.current = false; }} onScroll={(event) => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 12; }}>
+        <div className="thought-preview" ref={preview} tabIndex={0} aria-label="Thinking preview" onWheel={(event) => { if (event.deltaY < 0) follow.current = false; }} onScroll={(event) => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 12; }}>
           {isBlank(item.text) ? <StreamingDots /> : item.text}
         </div>
       )}
@@ -835,8 +835,8 @@ const TimelineView = memo(function TimelineView({
   const lastBlock = blocks[blocks.length - 1];
   const waitingLabel =
     lastBlock?.type === "ops" && lastBlock.items.some((item) => item.kind === "tool")
-      ? "正在操作"
-      : "正在思考";
+      ? "Working"
+      : "Thinking";
   return (
     <>
       {blocks.map((block) => {
@@ -877,8 +877,8 @@ function Inspector({
   if (!item) {
     return (
       <aside className="inspector pane">
-        <h2>检查器</h2>
-        <p className="topbar-title">点选一条工具调用查看详情。</p>
+        <h2>Inspector</h2>
+        <p className="topbar-title">Select a tool call to see details.</p>
       </aside>
     );
   }
@@ -980,7 +980,7 @@ function PermissionBar({
           </button>
         ))}
         <button className="btn ghost" type="button" onClick={() => onChoose(null)}>
-          取消
+          Cancel
         </button>
       </div>
     </div>
@@ -1087,7 +1087,7 @@ function SessionRow({
           type="button"
           draggable={false}
           aria-pressed={selected}
-          title={selected ? "取消选择" : "选择"}
+          title={selected ? "Deselect" : "Select"}
           onClick={(event) => {
             event.stopPropagation();
             onToggleSelect?.();
@@ -1126,7 +1126,7 @@ function SessionRow({
           className="session-open"
           role="button"
           tabIndex={0}
-          title={busy ? runningHint || "执行中" : session.title || "未命名对话"}
+          title={busy ? runningHint || "Running" : session.title || "Untitled chat"}
           onClick={() => {
             if (skipClick.current) {
               skipClick.current = false;
@@ -1154,14 +1154,14 @@ function SessionRow({
           }}
         >
           <span className="session-title">
-            <span className="session-title-text">{session.title || "未命名对话"}</span>
-            {session.interrupted ? <span className="interrupt-chip" title="本轮被强制打断">中断</span> : null}
+            <span className="session-title-text">{session.title || "Untitled chat"}</span>
+            {session.interrupted ? <span className="interrupt-chip" title="This turn was force-stopped">Interrupted</span> : null}
             {busy ? (
-              <span className="session-spinner" title={runningHint || "执行中"}>
+              <span className="session-spinner" title={runningHint || "Running"}>
                 <Spinner />
               </span>
             ) : session.unread ? (
-              <span className="unread-dot" title="未读" />
+              <span className="unread-dot" title="Unread" />
             ) : null}
           </span>
           <small>{runningHint || formatAgo(session.updatedAtMs ?? session.updatedAt)}</small>
@@ -1169,7 +1169,7 @@ function SessionRow({
       )}
       {selecting ? null : (
         <div className="session-actions">
-          <button className={`pin ${session.pinned ? "on" : ""}`} type="button" title={session.pinned ? "取消置顶" : "置顶"} draggable={false} onClick={onPin}>
+          <button className={`pin ${session.pinned ? "on" : ""}`} type="button" title={session.pinned ? "Unpin" : "Pin"} draggable={false} onClick={onPin}>
             <PinIcon filled={Boolean(session.pinned)} />
           </button>
         </div>
@@ -1262,13 +1262,13 @@ function HoverCard({
 
 function SubagentStatus({ agent }: { agent: SubagentSummary }) {
   const active = ["running", "pending", "starting", "in_progress"].includes(agent.status);
-  const label = ({ completed: "已完成", failed: "失败", cancelled: "已取消", stopped: "已停止", running: "运行中", pending: "等待中", starting: "启动中", in_progress: "运行中" } as Record<string, string>)[agent.status] ?? "状态未知";
+  const label = ({ completed: "Completed", failed: "Failed", cancelled: "Cancelled", stopped: "Stopped", running: "Running", pending: "Pending", starting: "Starting", in_progress: "Running" } as Record<string, string>)[agent.status] ?? "Unknown status";
   return <span className={`subagent-status ${active ? "running" : agent.status}`}><i />{label}</span>;
 }
 
 function SubagentRow({ agent, selected, onOpen }: { agent: SubagentSummary; selected?: boolean; onOpen: () => void }) {
   return <button type="button" className={`subagent-row${selected ? " selected" : ""}`} onClick={onOpen}>
-    <GitBranch size={16} /><span className="subagent-row-copy"><strong>{agent.description}</strong><small>{agent.agentType}{agent.toolCalls != null ? ` · ${agent.toolCalls} 次工具调用` : ""}</small></span>
+    <GitBranch size={16} /><span className="subagent-row-copy"><strong>{agent.description}</strong><small>{agent.agentType}{agent.toolCalls != null ? ` · ${agent.toolCalls} tool calls` : ""}</small></span>
     <SubagentStatus agent={agent} /><ChevronRight size={14} />
   </button>;
 }
@@ -1321,25 +1321,25 @@ function SubagentsPane({ sessionId, onOpenImage }: { sessionId: string; onOpenIm
   const active = agents.filter((row) => ["running", "pending", "starting", "in_progress"].includes(row.status)).length;
   return <>
     <details className="subagents-card" open>
-      <summary><GitBranch size={16} /><strong>子代理</strong><span>{agents.length} 个{active ? ` · ${active} 个运行中` : ""}</span><FoldChevron /></summary>
+      <summary><GitBranch size={16} /><strong>Subagents</strong><span>{agents.length}{active ? ` · ${active} running` : ""}</span><FoldChevron /></summary>
       <div className="subagent-list">{agents.map((row) => <SubagentRow key={row.id} agent={row} onOpen={() => setPath([row])} />)}</div>
     </details>
-    {selected && agent ? <Dialog title="子代理详情" className="subagent-panel" onClose={() => setPath([])}>
+    {selected && agent ? <Dialog title="Subagent details" className="subagent-panel" onClose={() => setPath([])}>
       <div className="subagent-layout">
-        <nav className="subagent-nav" aria-label="所属对话的子代理">{agents.map((row) => <SubagentRow key={row.id} agent={row} selected={path[0]?.id === row.id} onOpen={() => setPath([row])} />)}</nav>
+        <nav className="subagent-nav" aria-label="Subagents in this conversation">{agents.map((row) => <SubagentRow key={row.id} agent={row} selected={path[0]?.id === row.id} onOpen={() => setPath([row])} />)}</nav>
         <div className="subagent-main">
           <header className="subagent-heading">
-            {path.length > 1 ? <button type="button" className="btn ghost tiny" onClick={() => setPath((rows) => rows.slice(0, -1))}><ArrowLeft size={14} />返回上级子代理</button> : null}
+            {path.length > 1 ? <button type="button" className="btn ghost tiny" onClick={() => setPath((rows) => rows.slice(0, -1))}><ArrowLeft size={14} />Back to parent subagent</button> : null}
             <div className="subagent-title"><h3>{agent.description}</h3><SubagentStatus agent={agent} /></div>
-            <p>{agent.agentType}{agent.modelId ? ` · ${agent.modelId}` : ""}{agent.durationMs != null ? ` · ${formatSessionElapsed(agent.durationMs)}` : ""}{agent.toolCalls != null ? ` · ${agent.toolCalls} 次工具调用` : ""}</p>
+            <p>{agent.agentType}{agent.modelId ? ` · ${agent.modelId}` : ""}{agent.durationMs != null ? ` · ${formatSessionElapsed(agent.durationMs)}` : ""}{agent.toolCalls != null ? ` · ${agent.toolCalls} tool calls` : ""}</p>
           </header>
           <div className="subagent-transcript" ref={content} onWheel={(event) => { if (event.deltaY < 0) follow.current = false; }} onScroll={(event) => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
-            {agent.prompt ? <details className="subagent-task"><summary>派发任务</summary><div className="md"><Markdown remarkPlugins={[remarkGfm]}>{agent.prompt}</Markdown></div></details> : null}
-            {loading ? <div className="subagent-empty">正在读取子代理记录…</div> : null}
+            {agent.prompt ? <details className="subagent-task"><summary>Assigned task</summary><div className="md"><Markdown remarkPlugins={[remarkGfm]}>{agent.prompt}</Markdown></div></details> : null}
+            {loading ? <div className="subagent-empty">Loading subagent transcript...</div> : null}
             {error ? <div className="error-banner" role="alert">{error}</div> : null}
-            {view?.subagents.length ? <section className="subagent-children"><h4>下级子代理</h4>{view.subagents.map((child) => <SubagentRow key={child.id} agent={child} onOpen={() => setPath((rows) => [...rows, child])} />)}</section> : null}
+            {view?.subagents.length ? <section className="subagent-children"><h4>Child subagents</h4>{view.subagents.map((child) => <SubagentRow key={child.id} agent={child} onOpen={() => setPath((rows) => [...rows, child])} />)}</section> : null}
             {view ? <div className="thread subagent-thread"><TimelineView items={view.timeline} busy={["running", "pending", "starting", "in_progress"].includes(agent.status)} groupTools selectedId={toolId} onSelectTool={(tool) => setToolId(tool.id)} showTimestamps onOpenImage={onOpenImage} /></div> : null}
-            {view && !view.timeline.length ? <div className="subagent-empty">{agent.sessionId ? "尚未写入会话内容" : "子代理尚未创建会话"}</div> : null}
+            {view && !view.timeline.length ? <div className="subagent-empty">{agent.sessionId ? "No conversation content yet" : "Subagent has no conversation yet"}</div> : null}
             {view?.timeline.find((item) => item.kind === "tool" && item.id === toolId)?.kind === "tool" ? <div className="subagent-tool-detail"><Inspector item={view.timeline.find((item): item is Extract<TimelineItem, { kind: "tool" }> => item.kind === "tool" && item.id === toolId)} /></div> : null}
           </div>
         </div>
@@ -1350,7 +1350,7 @@ function SubagentsPane({ sessionId, onOpenImage }: { sessionId: string; onOpenIm
 
 function SidebarResize({ width, onChange }: { width: number; onChange: (width: number) => void }) {
   const drag = useRef<{ x: number; width: number } | undefined>(undefined);
-  return <div className="sidebar-resize" role="separator" aria-label="调整对话栏宽度" aria-orientation="vertical" tabIndex={0} aria-valuemin={280} aria-valuemax={520} aria-valuenow={width}
+  return <div className="sidebar-resize" role="separator" aria-label="Resize conversation sidebar" aria-orientation="vertical" tabIndex={0} aria-valuemin={280} aria-valuemax={520} aria-valuenow={width}
     onPointerDown={(event) => { if (event.button !== 0) return; event.preventDefault(); drag.current = { x: event.clientX, width }; event.currentTarget.setPointerCapture(event.pointerId); }}
     onPointerMove={(event) => { if (drag.current) onChange(clampSidebarWidth(drag.current.width + event.clientX - drag.current.x)); }}
     onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }}
@@ -1691,7 +1691,7 @@ export function App() {
     setMenu(undefined);
     if (!folder) return;
     const result = await window.grok.openPath(folder);
-    if (!result.ok) setBusyError(result.error || "无法打开工作目录");
+    if (!result.ok) setBusyError(result.error || "Couldn't open working directory");
   }
 
   const openImage = useCallback(async (path: string, preview?: string, name?: string) => {
@@ -1779,7 +1779,7 @@ export function App() {
   );
   const archivedGroup: SessionGroup = {
     key: "__archived__",
-    label: "已归档",
+    label: "Archived",
     sessions: archivedSessions,
   };
   const archiveAllSelected =
@@ -1896,13 +1896,13 @@ export function App() {
   const sessionMenuItems: MenuEntry[] = menuSession
     ? [
         {
-          type: "item", id: "manage", label: "移动到分组 / 批量管理",
+          type: "item", id: "manage", label: "Move to group / manage",
           onClick: () => { setMenu(undefined); setSessionManager({ ids: [menuSession.sessionId] }); },
         },
         {
           type: "item",
           id: "rename",
-          label: "重命名",
+          label: "Rename",
           onClick: () => {
             setMenu(undefined);
             setRenamingId(menuSession.sessionId);
@@ -1911,19 +1911,19 @@ export function App() {
         {
           type: "item",
           id: "copy-id",
-          label: "复制会话 ID",
+          label: "Copy conversation ID",
           onClick: () => void copyText(menuSession.sessionId),
         },
         {
           type: "item",
           id: "copy-session",
-          label: "复制会话",
+          label: "Copy conversation info",
           onClick: () => void copyText(formatSessionCopy(menuSession)),
         },
         {
           type: "item",
           id: "open-cwd",
-          label: "打开工作目录",
+          label: "Open working directory",
           disabled: !menuSession.cwd,
           onClick: () => void openFolder(menuSession.cwd),
         },
@@ -1931,7 +1931,7 @@ export function App() {
         {
           type: "item",
           id: "pin",
-          label: menuSession.pinned ? "取消置顶" : "置顶",
+          label: menuSession.pinned ? "Unpin" : "Pin",
           onClick: () => {
             setMenu(undefined);
             void window.grok.pinSession(menuSession.sessionId, !menuSession.pinned).then(setState);
@@ -1940,14 +1940,14 @@ export function App() {
         {
           type: "item",
           id: "archive",
-          label: menuSession.archived ? "取消归档" : "归档",
+          label: menuSession.archived ? "Unarchive" : "Archive",
           onClick: () => void archiveSession(menuSession),
         },
         { type: "sep", id: "sep-2" },
         {
           type: "item",
           id: "delete",
-          label: "删除",
+          label: "Delete",
           danger: true,
           onClick: () => void deleteSession(menuSession),
         },
@@ -1956,7 +1956,7 @@ export function App() {
   const groupMenuItems: MenuEntry[] = menuGroup
     ? [
         {
-          type: "item", id: "manage-group", label: "管理这个分组的会话",
+          type: "item", id: "manage-group", label: "Manage conversations in group",
           onClick: () => { setMenu(undefined); setSessionManager({ group: menuGroup.custom ? menuGroup.key : menuGroup.cwd ? `workspace:${menuGroup.cwd}` : menuGroup.key === "__archived__" ? "__archived__" : "__all__" }); },
         },
         ...(menuGroup.cwd
@@ -1964,7 +1964,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "new",
-                label: "在此新建会话",
+                label: "New chat here",
                 onClick: () => {
                   setMenu(undefined);
                   void startIn(menuGroup.cwd!);
@@ -1973,13 +1973,13 @@ export function App() {
               {
                 type: "item" as const,
                 id: "open-cwd",
-                label: "打开工作目录",
+                label: "Open working directory",
                 onClick: () => void openFolder(menuGroup.cwd),
               },
               {
                 type: "item" as const,
                 id: "copy-path",
-                label: "复制路径",
+                label: "Copy path",
                 onClick: () => void copyText(menuGroup.cwd!),
               },
               { type: "sep" as const, id: "sep-1" },
@@ -1988,7 +1988,7 @@ export function App() {
         {
           type: "item",
           id: "toggle",
-          label: state.collapsedGroups.includes(menuGroup.key) ? "展开" : "折叠",
+          label: state.collapsedGroups.includes(menuGroup.key) ? "Expand" : "Collapse",
           onClick: () => {
             setMenu(undefined);
             void window.grok.toggleGroup(menuGroup.key).then(setState);
@@ -1999,7 +1999,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "select",
-                label: archiveSelecting ? "完成选择" : "选择会话",
+                label: archiveSelecting ? "Done selecting" : "Select conversations",
                 onClick: () => {
                   if (archiveSelecting) exitArchiveSelect();
                   else void beginArchiveSelect();
@@ -2008,7 +2008,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "select-all",
-                label: archiveAllSelected ? "取消全选" : "全选",
+                label: archiveAllSelected ? "Deselect all" : "Select all",
                 onClick: () => {
                   setMenu(undefined);
                   setArchiveSelecting(true);
@@ -2026,7 +2026,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "delete-selected",
-                label: archiveSelected.size ? `删除已选（${archiveSelected.size}）` : "删除已选",
+                label: archiveSelected.size ? `Delete selected (${archiveSelected.size})` : "Delete selected",
                 danger: true,
                 disabled: archiveSelected.size === 0,
                 onClick: () => void deleteArchivedSessions([...archiveSelected]),
@@ -2034,7 +2034,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "delete-all-archived",
-                label: "删除全部会话",
+                label: "Delete all conversations",
                 danger: true,
                 onClick: () => void deleteArchivedSessions(),
               },
@@ -2045,7 +2045,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "hide",
-                label: hiddenKeySet.has(menuGroup.key) ? "取消隐藏" : "隐藏工作区",
+                label: hiddenKeySet.has(menuGroup.key) ? "Unhide" : "Hide workspace",
                 onClick: () => {
                   setMenu(undefined);
                   void (
@@ -2059,7 +2059,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "delete-workspace",
-                label: "删除工作区",
+                label: "Delete workspace",
                 danger: true,
                 onClick: () => {
                   setMenu(undefined);
@@ -2071,7 +2071,7 @@ export function App() {
       ]
     : [];
   const sortMenuItems: MenuEntry[] = [
-    { type: "label", id: "group-sort", label: "分组" },
+    { type: "label", id: "group-sort", label: "Groups" },
     ...GROUP_SORT_OPTIONS.map((option) => ({
       type: "item" as const,
       id: `group-${option.id}`,
@@ -2088,7 +2088,7 @@ export function App() {
       },
     })),
     { type: "sep", id: "sort-sep" },
-    { type: "label", id: "session-sort", label: "会话" },
+    { type: "label", id: "session-sort", label: "Conversations" },
     ...SESSION_SORT_OPTIONS.map((option) => ({
       type: "item" as const,
       id: `session-${option.id}`,
@@ -2111,13 +2111,13 @@ export function App() {
   const firstProjectKey = liveGroups.find((group) => group.key !== "__pinned__")?.key;
   const listToolbar = (
     <div className="workspace-actions">
-            <span className="nav-section-label">{state.sessionOrganization?.groups.length ? "项目与分组" : "项目"}</span>
+            <span className="nav-section-label">{state.sessionOrganization?.groups.length ? "Projects & groups" : "Projects"}</span>
             {(liveGroups.length > 0 || archivedSessions.length > 0) && (
               <div className="group-bulk">
                 <button
                   className="icon-btn"
                   type="button"
-                  title="展开所有项目"
+                  title="Expand all projects"
                   onClick={() => void window.grok.setCollapsedGroups([]).then(setState)}
                 >
                   <ChevronsDown size={16} />
@@ -2125,7 +2125,7 @@ export function App() {
                 <button
                   className="icon-btn"
                   type="button"
-                  title="收起所有项目"
+                  title="Collapse all projects"
                   onClick={() => {
                     const keys = [
                       ...liveGroups.flatMap((group) => [group.key, ...(group.nested?.map((child) => child.key) ?? [])]),
@@ -2140,7 +2140,7 @@ export function App() {
                 <button
                   className={`icon-btn ${menu?.kind === "sort" ? "on" : ""}`}
                   type="button"
-                  title="排序方式"
+                  title="Sort by"
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2176,18 +2176,18 @@ export function App() {
       {!state.sidebarCollapsed ? <SidebarResize width={appearance.sidebarWidth} onChange={(width) => setAppearance((prev) => ({ ...prev, sidebarWidth: width }))} /> : null}
       {state.sidebarCollapsed ? (
         <aside className="rail pane">
-          <button className="icon-btn" type="button" title="展开侧栏" onClick={() => void window.grok.setSidebarCollapsed(false)}>
+          <button className="icon-btn" type="button" title="Expand sidebar" onClick={() => void window.grok.setSidebarCollapsed(false)}>
             <PanelLeft size={18} />
           </button>
-          <button className="icon-btn" type="button" title="搜索对话" aria-label="搜索对话" onClick={() => setSearchOpen(true)}><Search size={18} /></button>
-          <button className="icon-btn" type="button" title="管理会话" aria-label="管理会话" onClick={() => setSessionManager({})}><ListChecks size={18} /></button>
-          <button className="icon-btn" type="button" title="添加对话" onClick={() => void beginNew()}>
+          <button className="icon-btn" type="button" title="Search conversations" aria-label="Search conversations" onClick={() => setSearchOpen(true)}><Search size={18} /></button>
+          <button className="icon-btn" type="button" title="Manage conversations" aria-label="Manage conversations" onClick={() => setSessionManager({})}><ListChecks size={18} /></button>
+          <button className="icon-btn" type="button" title="New chat" onClick={() => void beginNew()}>
             <Plus size={18} />
           </button>
           <button
             className={`icon-btn ${studioTab === "image" ? "on" : ""}`}
             type="button"
-            title="图片生成"
+            title="Image generation"
             onClick={() => setStudioTab("image")}
           >
             <ImageIcon size={18} />
@@ -2195,7 +2195,7 @@ export function App() {
           <button
             className={`icon-btn ${studioTab === "video" ? "on" : ""}`}
             type="button"
-            title="视频生成"
+            title="Video generation"
             onClick={() => setStudioTab("video")}
           >
             <Video size={18} />
@@ -2203,7 +2203,7 @@ export function App() {
           <button
             className={`icon-btn ${studioTab === "voice" ? "on" : ""}`}
             type="button"
-            title="语音转写"
+            title="Voice transcription"
             onClick={() => setStudioTab("voice")}
           >
             <Mic size={18} />
@@ -2212,7 +2212,7 @@ export function App() {
             <button
               className="icon-btn"
               type="button"
-              title="设置"
+              title="Settings"
               onClick={() => setSettingsOpen(true)}
             >
               <SettingsIcon size={18} />
@@ -2221,13 +2221,13 @@ export function App() {
               <button
                 className="update-proto rail-update"
                 type="button"
-                title={`更新到 ${state.update.latestVersion}`}
+                title={`Update to ${state.update.latestVersion}`}
                 onClick={() => {
                   setChangelogOpen(true);
                   void window.grok.checkUpdate().then(setState);
                 }}
               >
-                更新
+                Update
               </button>
             ) : null}
           </div>
@@ -2236,7 +2236,7 @@ export function App() {
         <aside className="sidebar pane">
           <div className="sidebar-head">
             <span className="brand-mark">Grok Harness</span>
-            <button className="icon-btn" type="button" title="收起侧栏" onClick={() => void window.grok.setSidebarCollapsed(true)}>
+            <button className="icon-btn" type="button" title="Collapse sidebar" onClick={() => void window.grok.setSidebarCollapsed(true)}>
               <PanelLeft size={16} />
             </button>
           </div>
@@ -2245,7 +2245,7 @@ export function App() {
 
           <div className="session-list">
             {liveSessions.length === 0 && archivedSessions.length === 0 && (
-              <div className="session-empty">本机还没有会话</div>
+              <div className="session-empty">No conversations on this machine yet</div>
             )}
             {liveGroups.map((group) => {
               const isCollapsed = state.collapsedGroups.includes(group.key);
@@ -2310,7 +2310,7 @@ export function App() {
                       <span className="session-count">{group.sessions.length}</span>
                     </div>
                     {group.cwd && (
-                      <button className="btn tiny" type="button" title="在此目录新建会话" draggable={false} onClick={() => void startIn(group.cwd!)}>
+                      <button className="btn tiny" type="button" title="New chat in this folder" draggable={false} onClick={() => void startIn(group.cwd!)}>
                         +
                       </button>
                     )}
@@ -2318,7 +2318,7 @@ export function App() {
                       <button
                         className="kebab"
                         type="button"
-                        title="分组操作"
+                        title="Group actions"
                         draggable={false}
                         onClick={(event) => placeMenu(event, { kind: "group", id: group.key })}
                       >
@@ -2327,7 +2327,7 @@ export function App() {
                     ) : null}
                   </header>
                   <Fold collapsed={isCollapsed}>
-                    {group.custom && !group.sessions.length && <button className="custom-group-empty" onClick={() => setSessionManager({ group: group.key })}>添加会话到分组</button>}
+                    {group.custom && !group.sessions.length && <button className="custom-group-empty" onClick={() => setSessionManager({ group: group.key })}>Add conversations to group</button>}
                     {nested.length > 0
                       ? nested.map((child) => {
                           const childCollapsed = state.collapsedGroups.includes(child.key);
@@ -2355,7 +2355,7 @@ export function App() {
                                   <button
                                     className="btn tiny"
                                     type="button"
-                                    title="在此目录新建会话"
+                                    title="New chat in this folder"
                                     onClick={() => void startIn(child.cwd!)}
                                   >
                                     +
@@ -2419,7 +2419,7 @@ export function App() {
                   >
                     <FoldChevron open={!hiddenCollapsed} />
                     <span className="session-group-copy">
-                      <strong>已隐藏</strong>
+                      <strong>Hidden</strong>
                     </span>
                     <span className="session-count">{hiddenWorkspaceGroups.length}</span>
                   </button>
@@ -2444,7 +2444,7 @@ export function App() {
                       <button
                         className="kebab"
                         type="button"
-                        title="工作区操作"
+                        title="Workspace actions"
                         onClick={(event) => placeMenu(event, { kind: "group", id: group.key })}
                       >
                         ⋯
@@ -2469,7 +2469,7 @@ export function App() {
                   >
                     <FoldChevron open={!archivedCollapsed} />
                     <span className="session-group-copy">
-                      <strong>已归档</strong>
+                      <strong>Archived</strong>
                     </span>
                     <span className="session-count">
                       {archiveSelecting
@@ -2478,23 +2478,23 @@ export function App() {
                     </span>
                   </button>
                   {archiveSelecting ? (
-                    <button className="text-action" type="button" title="完成选择" onClick={exitArchiveSelect}>
-                      完成
+                    <button className="text-action" type="button" title="Done selecting" onClick={exitArchiveSelect}>
+                      Done
                     </button>
                   ) : (
                     <>
                       <button
                         className="text-action"
                         type="button"
-                        title="选择会话"
+                        title="Select conversations"
                         onClick={() => void beginArchiveSelect()}
                       >
-                        选择
+                        Select
                       </button>
                       <button
                         className="kebab"
                         type="button"
-                        title="归档操作"
+                        title="Archive actions"
                         onClick={(event) => placeMenu(event, { kind: "group", id: "__archived__" })}
                       >
                         ⋯
@@ -2515,7 +2515,7 @@ export function App() {
                         )
                       }
                     >
-                      {archiveAllSelected ? "取消全选" : "全选"}
+                      {archiveAllSelected ? "Deselect all" : "Select all"}
                     </button>
                     <button
                       className="text-action danger"
@@ -2523,14 +2523,14 @@ export function App() {
                       disabled={archiveSelected.size === 0}
                       onClick={() => void deleteArchivedSessions([...archiveSelected])}
                     >
-                      删除已选
+                      Delete selected
                     </button>
                     <button
                       className="text-action danger"
                       type="button"
                       onClick={() => void deleteArchivedSessions()}
                     >
-                      全部删除
+                      Delete all
                     </button>
                   </div>
                 ) : null}
@@ -2566,20 +2566,20 @@ export function App() {
                 className="user-pop"
                 onPointerDown={(event) => event.stopPropagation()}
               >
-                <h3>{account.email ?? "Grok 账户"}</h3>
+                <h3>{account.email ?? "Grok account"}</h3>
                 <dl>
-                  <dt>状态</dt>
+                  <dt>Status</dt>
                   <dd>{statusLabel(state.connection)}</dd>
-                  <dt>套餐</dt>
+                  <dt>Plan</dt>
                   <dd>{account.plan ?? quota?.plan ?? "—"}</dd>
-                  <dt>模型</dt>
+                  <dt>Model</dt>
                   <dd>{account.modelName ?? state.modelName ?? "—"}</dd>
-                  <dt>版本</dt>
+                  <dt>Version</dt>
                   <dd>{account.agentVersion ?? state.agentVersion ?? "—"}</dd>
                 </dl>
                 <div className="quota">
                   <div className="user-copy">
-                    <span>额度使用</span>
+                    <span>Quota usage</span>
                   </div>
                   {used != null ? (
                     <>
@@ -2587,14 +2587,14 @@ export function App() {
                         <i style={{ width: `${Math.min(100, Math.max(0, used))}%` }} />
                       </div>
                       <small>
-                        已用 {Math.round(used)}%
+                        Used {Math.round(used)}%
                         {quota?.period ? ` · ${quota.period}` : ""}
-                        {quota?.resetAt ? ` · 重置 ${new Date(quota.resetAt).toLocaleString()}` : ""}
-                        {quota?.extraCredits ? ` · 额外 ${quota.extraCredits}` : ""}
+                        {quota?.resetAt ? ` · resets ${new Date(quota.resetAt).toLocaleString()}` : ""}
+                        {quota?.extraCredits ? ` · extra ${quota.extraCredits}` : ""}
                       </small>
                     </>
                   ) : (
-                    <small>暂无额度数据，可刷新账户状态。</small>
+                    <small>No quota data yet. Refresh account status.</small>
                   )}
                 </div>
                 <button
@@ -2606,7 +2606,7 @@ export function App() {
                     void window.grok.checkUpdate().then(setState);
                   }}
                 >
-                  更新日志
+                  Changelog
                 </button>
                 <button
                   className="linkish"
@@ -2616,7 +2616,7 @@ export function App() {
                     setUsageOpen(true);
                   }}
                 >
-                  Token 消耗
+                  Token usage
                 </button>
                 <button
                   className="linkish"
@@ -2626,18 +2626,18 @@ export function App() {
                     setSettingsOpen(true);
                   }}
                 >
-                  打开设置
+                  Open settings
                 </button>
                 <button className="linkish" type="button" onClick={() => {
                   setAccountOpen(false);
                   setDesktopOpen(true);
-                }}>桌面应用与更新</button>
+                }}>Desktop app & updates</button>
               </div>
             )}
             <div className="user-dock-bar">
               <button
                 aria-expanded={accountOpen}
-                aria-label="账户菜单"
+                aria-label="Account menu"
                 className="user-chip"
                 type="button"
                 onClick={(event) => {
@@ -2648,7 +2648,7 @@ export function App() {
               >
                 <span className="avatar">{initial}</span>
                 <span className="user-copy">
-                  <strong>{account.email ?? "Grok 账号"}</strong>
+                  <strong>{account.email ?? "Grok account"}</strong>
                   <span>
                     <i className={`status-dot ${state.connection}`} />
                     {statusLabel(state.connection)}
@@ -2659,7 +2659,7 @@ export function App() {
               <button
                 className="icon-btn"
                 type="button"
-                title="设置"
+                title="Settings"
                 onClick={(event) => {
                   event.stopPropagation();
                   setAccountOpen(false);
@@ -2678,7 +2678,7 @@ export function App() {
                     void window.grok.checkUpdate().then(setState);
                   }}
                 >
-                  更新
+                  Update
                 </button>
               ) : null}
             </div>
@@ -2691,26 +2691,26 @@ export function App() {
           <div className="topbar-title" title={studioTab ? undefined : state.sessionTitle || undefined}>
             <strong>
               {studioTab === "image"
-                ? "图片生成"
+                ? "Image generation"
                 : studioTab === "video"
-                  ? "视频生成"
+                  ? "Video generation"
                   : studioTab === "voice"
-                    ? "语音转写"
+                    ? "Voice transcription"
                     : home
-                      ? "新对话"
-                      : state.sessionTitle || "未选择对话"}
+                      ? "New chat"
+                      : state.sessionTitle || "No conversation selected"}
             </strong>
-            {studioTab ? <span className="topbar-cwd">资源库</span> : null}
+            {studioTab ? <span className="topbar-cwd">Library</span> : null}
             {!studioTab && !home && (state.busy || state.backgroundTasks.length) ? (
               <>
                 <span
                   className="topbar-spinner"
-                  title={state.busy ? "执行中" : formatBackgroundLine(state.backgroundTasks)}
+                  title={state.busy ? "Running" : formatBackgroundLine(state.backgroundTasks)}
                 >
                   <Spinner />
                 </span>
                 {state.busy ? (
-                  <TurnClock startedAt={state.runStats.turnStartedAt} title="本轮已用时间" />
+                  <TurnClock startedAt={state.runStats.turnStartedAt} title="Turn elapsed time" />
                 ) : (
                   <span className="turn-clock" title={state.backgroundTasks.map((task) => task.title).join("\n")}>
                     {formatBackgroundLine(state.backgroundTasks)}
@@ -2727,7 +2727,7 @@ export function App() {
               <button
                 className="icon-btn"
                 type="button"
-                title="会话操作"
+                title="Conversation actions"
                 onClick={(event) => placeMenu(event, { kind: "session", id: currentSession.sessionId })}
               >
                 <MoreHorizontal size={18} />
@@ -2737,7 +2737,7 @@ export function App() {
               <button
                 className="icon-btn"
                 type="button"
-                title={state.inspectorOpen ? "收起右侧" : "打开检查器"}
+                title={state.inspectorOpen ? "Collapse panel" : "Open inspector"}
                 onClick={() => void window.grok.setInspectorOpen(!state.inspectorOpen)}
               >
                 <PanelRight size={18} />
@@ -2765,8 +2765,8 @@ export function App() {
           />
         ) : home ? (
           <div className="home">
-            <h1>今天想做什么？</h1>
-            <p>从一个想法开始，让 Grok 帮你完成。</p>
+            <h1>What do you want to do today?</h1>
+            <p>Start with an idea and let Grok do the rest.</p>
             <ComposerPane
               className="home-composer"
               busy={state.busy}
@@ -2774,20 +2774,20 @@ export function App() {
               models={state.models}
               modelId={state.modelId}
               effort={state.effort}
-              placeholder="描述任务，或用 @ 添加上下文"
+              placeholder="Describe a task, or use @ to add context"
               rows={4}
               extraToolbar={
                 <div className={`chip workspace-chip ${draftWorkspace ? "has-value" : ""}`}>
                   <button
                     className="chip-main"
                     type="button"
-                    title={draftWorkspace || "选择工作区"}
+                    title={draftWorkspace || "Choose workspace"}
                     onClick={() => void pickWorkspace()}
                   >
-                    <FolderOpen size={14} />{draftWorkspace ? folderLabel(draftWorkspace) : "选择项目"}
+                    <FolderOpen size={14} />{draftWorkspace ? folderLabel(draftWorkspace) : "Choose project"}
                   </button>
                   {draftWorkspace ? (
-                    <button className="chip-clear" type="button" title="移除工作区" onClick={(event) => void clearWorkspace(event)}>
+                    <button className="chip-clear" type="button" title="Remove workspace" onClick={(event) => void clearWorkspace(event)}>
                       ×
                     </button>
                   ) : null}
@@ -2822,13 +2822,13 @@ export function App() {
                 {state.sessionId ? <SubagentsPane key={state.sessionId} sessionId={state.sessionId} onOpenImage={openImage} /> : null}
                 {currentSession?.updateInterrupted ? (
                   <div className="interrupt-banner">
-                    <span>这次对话在 Grok Build 更新时被打断，不是手动中断。</span>
+                    <span>This conversation was interrupted by a Grok Build update, not stopped by you.</span>
                     <button
                       className="btn ghost tiny"
                       type="button"
                       onClick={() => void window.grok.dismissInterrupted(currentSession.sessionId).then(setState)}
                     >
-                      知道了
+                      Got it
                     </button>
                   </div>
                 ) : null}
@@ -2844,14 +2844,14 @@ export function App() {
                 />
                 {!state.busy && (state.runStats.durationMs || state.runStats.tokens) ? (
                   <div className="session-stats">
-                    本会话
+                    This conversation
                     {state.runStats.durationMs ? ` ${formatSessionElapsed(state.runStats.durationMs)}` : ""}
                     {state.runStats.tokens ? ` · ${formatTokens(state.runStats.tokens)} tok` : ""}
                   </div>
                 ) : null}
                 {(state.error || busyError) && (
                   <div className="bubble">
-                    <div className="kicker thought">错误</div>
+                    <div className="kicker thought">Error</div>
                     <div className="error-banner">{busyError ?? state.error}</div>
                   </div>
                 )}
@@ -2869,9 +2869,9 @@ export function App() {
               />
               {state.busy ? (
                 <div className="turn-live">
-                  进行中 <TurnClock startedAt={state.runStats.turnStartedAt} />
+                  Running <TurnClock startedAt={state.runStats.turnStartedAt} />
                   {state.runStats.tokens ? ` · ${formatTokens(state.runStats.tokens)} tok` : ""}
-                  {state.settings.followUpBehavior === "steer" ? " · 追问将注入空隙" : " · Enter 排队追问"}
+                  {state.settings.followUpBehavior === "steer" ? " · follow-ups steer into gaps" : " · Enter queues a follow-up"}
                 </div>
               ) : null}
               {state.permission && (
@@ -2888,7 +2888,7 @@ export function App() {
                 models={state.models}
                 modelId={state.modelId}
                 effort={state.effort}
-                placeholder="继续对话，或用 @ 添加上下文"
+                placeholder="Continue the conversation, or use @ to add context"
                 rows={3}
                 injectText={injectText}
                 onSend={sendComposer}
@@ -2965,8 +2965,8 @@ export function App() {
       )}
       {usageOpen && <UsagePanel usage={state.tokenUsage} onClose={() => setUsageOpen(false)} />}
       {lightbox && (
-        <Dialog title={lightbox.name || "图片预览"} className="chat-image-panel" onClose={() => setLightbox(undefined)}>
-          <img src={lightbox.src} alt={lightbox.name || "对话图片"} onContextMenu={(event) => {
+        <Dialog title={lightbox.name || "Image preview"} className="chat-image-panel" onClose={() => setLightbox(undefined)}>
+          <img src={lightbox.src} alt={lightbox.name || "Conversation image"} onContextMenu={(event) => {
             event.preventDefault();
             if (!/^https?:/i.test(lightbox.path)) void window.grok.imageMenu(lightbox.path);
           }} />
@@ -2979,20 +2979,20 @@ export function App() {
 function statusLabel(state: AppSnapshot["connection"]): string {
   switch (state) {
     case "ready":
-      return "已连接";
+      return "Connected";
     case "starting":
-      return "启动中";
+      return "Starting";
     case "error":
-      return "出错";
+      return "Error";
     case "stopped":
-      return "未连接";
+      return "Disconnected";
     default:
-      return "未连接";
+      return "Disconnected";
   }
 }
 
 function sessionTitle(session: SessionSummary): string {
-  return session.title?.trim() || "未命名对话";
+  return session.title?.trim() || "Untitled chat";
 }
 
 function sortSessions(
@@ -3017,8 +3017,8 @@ function sortSessions(
       const pinDelta = (b.pinOrder ?? 0) - (a.pinOrder ?? 0);
       if (pinDelta) return pinDelta;
     }
-    if (sort === "title-asc") return sessionTitle(a).localeCompare(sessionTitle(b), "zh-CN", { numeric: true });
-    if (sort === "title-desc") return sessionTitle(b).localeCompare(sessionTitle(a), "zh-CN", { numeric: true });
+    if (sort === "title-asc") return sessionTitle(a).localeCompare(sessionTitle(b), "en", { numeric: true });
+    if (sort === "title-desc") return sessionTitle(b).localeCompare(sessionTitle(a), "en", { numeric: true });
     return (b.updatedAtMs ?? 0) - (a.updatedAtMs ?? 0);
   });
 }
@@ -3040,12 +3040,12 @@ function sortGroups(groups: SessionGroup[], sort: GroupSort, customOrder?: strin
     });
   }
   return [...groups].sort((a, b) => {
-    if (sort === "name-asc") return a.label.localeCompare(b.label, "zh-CN", { numeric: true });
-    if (sort === "name-desc") return b.label.localeCompare(a.label, "zh-CN", { numeric: true });
+    if (sort === "name-asc") return a.label.localeCompare(b.label, "en", { numeric: true });
+    if (sort === "name-desc") return b.label.localeCompare(a.label, "en", { numeric: true });
     if (sort === "count") {
       const countDelta = b.sessions.length - a.sessions.length;
       if (countDelta) return countDelta;
-      return a.label.localeCompare(b.label, "zh-CN", { numeric: true });
+      return a.label.localeCompare(b.label, "en", { numeric: true });
     }
     return groupLatest(b) - groupLatest(a);
   });
@@ -3091,7 +3091,7 @@ function buildGroups(
   if (pinned.length) {
     groups.push({
       key: "__pinned__",
-      label: "置顶",
+      label: "Pinned",
       sessions: sortSessions(pinned, sessionSort, true, sessionOrder?.__pinned__),
     });
   }
@@ -3104,28 +3104,28 @@ function buildGroups(
 }
 
 function folderLabel(cwd: string): string {
-  if (cwd === "(unknown)") return "未知目录";
+  if (cwd === "(unknown)") return "Unknown folder";
   const parts = cwd.split(/[/\\]/).filter(Boolean);
   return parts[parts.length - 1] ?? cwd;
 }
 
 function formatSessionCopy(session: SessionSummary): string {
-  const lines = [session.title || "未命名对话", `会话 ID: ${session.sessionId}`];
-  if (session.cwd) lines.push(`工作目录: ${session.cwd}`);
+  const lines = [session.title || "Untitled chat", `Conversation ID: ${session.sessionId}`];
+  if (session.cwd) lines.push(`Working directory: ${session.cwd}`);
   const ms = session.updatedAtMs ?? (session.updatedAt ? Date.parse(session.updatedAt) : Number.NaN);
-  if (Number.isFinite(ms)) lines.push(`更新时间: ${new Date(ms).toLocaleString()}`);
+  if (Number.isFinite(ms)) lines.push(`Updated: ${new Date(ms).toLocaleString()}`);
   return lines.join("\n");
 }
 
 function groupHoverLines(group: SessionGroup): string[] {
   const count =
     group.key === "__pinned__" || group.key.startsWith("__pinned__:")
-      ? `${group.sessions.length} 个置顶会话`
+      ? `${group.sessions.length} pinned conversations`
       : group.key === "__archived__"
-        ? `${group.sessions.length} 个已归档会话`
-        : `${group.sessions.length} 个会话`;
+        ? `${group.sessions.length} archived conversations`
+        : `${group.sessions.length} conversations`;
   const latest = Math.max(0, ...group.sessions.map((session) => session.updatedAtMs ?? 0));
-  return latest ? [count, `最近 ${formatAgo(latest)}`] : [count];
+  return latest ? [count, `Last active ${formatAgo(latest)}`] : [count];
 }
 
 function formatAgo(value?: string | number): string {
@@ -3136,10 +3136,10 @@ function formatAgo(value?: string | number): string {
   const minute = 60_000;
   const hour = 60 * minute;
   const day = 24 * hour;
-  if (delta < minute) return "刚刚";
-  if (delta < hour) return `${Math.floor(delta / minute)} 分钟前`;
-  if (delta < day) return `${Math.floor(delta / hour)} 小时前`;
-  if (delta < 7 * day) return `${Math.floor(delta / day)} 天前`;
+  if (delta < minute) return "just now";
+  if (delta < hour) return `${Math.floor(delta / minute)}m ago`;
+  if (delta < day) return `${Math.floor(delta / hour)}h ago`;
+  if (delta < 7 * day) return `${Math.floor(delta / day)}d ago`;
   return new Date(ms).toLocaleDateString();
 }
 

@@ -69,7 +69,7 @@ test('fresh metadata and transcript polling retain IDs and append content', asyn
   assert.equal(afterView.timeline[0].text, 'Inspecting more');
 });
 test('unowned child IDs and path traversal cannot open an arbitrary transcript', async () => {
-  await assert.rejects(readSubagentView(fork, child), /找不到/);
+  await assert.rejects(readSubagentView(fork, child), /not found/);
   assert.equal(await resolveSessionDir('../outside', cwd), undefined);
   assert.deepEqual(await listSessionSubagents('../outside'), []);
 });
