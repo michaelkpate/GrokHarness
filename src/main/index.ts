@@ -9,6 +9,8 @@ import { DesktopController } from "./desktop";
 import { DESKTOP_RELEASES, GROK_INSTALL_GUIDE } from "../shared/desktop";
 import { copyImageToClipboard, imageDataUrl, inspectPaths, saveAudioBytes, saveClipboardImage } from "./attachments";
 import { isGrokSettingKey } from "../shared/grok-settings";
+import { t } from "../shared/i18n";
+import { initLanguage, languageState, setLanguagePreference } from "./language";
 import type { GroupSort, MediaKind, PromptAttachment, SessionMode, SessionRef, SessionSort } from "../shared/types";
 import {
   deleteMediaAsset,
@@ -102,16 +104,21 @@ function createTray(): void {
   tray = new Tray(image.isEmpty() ? nativeImage.createEmpty() : image.resize({ width: 16, height: 16 }));
   tray.setToolTip("Grok-Harness");
   tray.on("click", () => showWindow());
-  tray.setContextMenu(
+  updateTrayMenu();
+}
+
+/** (Re)builds the tray menu; called again when the UI language changes. */
+function updateTrayMenu(): void {
+  tray?.setContextMenu(
     Menu.buildFromTemplate([
-      { label: "Show window", click: () => showWindow() },
-      { label: "Desktop app & updates", click: () => {
+      { label: t("Show window"), click: () => showWindow() },
+      { label: t("Desktop app & updates"), click: () => {
         showWindow();
         mainWindow?.webContents.send("desktop:open");
       } },
       { type: "separator" },
       {
-        label: "Quit",
+        label: t("Quit"),
         click: () => {
           app.quit();
         },
@@ -165,6 +172,16 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+  initLanguage();
+  // The preload reads the language synchronously so the first render is already translated.
+  ipcMain.on("i18n:getStateSync", (event) => {
+    event.returnValue = languageState();
+  });
+  ipcMain.handle("i18n:setPreference", (_event, preference: unknown) => {
+    const state = setLanguagePreference(preference);
+    updateTrayMenu();
+    return state;
+  });
   const syncWindowTheme = () => {
     const dark = nativeTheme.shouldUseDarkColors;
     mainWindow?.setBackgroundColor(dark ? "#181818" : "#ffffff");
@@ -213,9 +230,9 @@ app.whenReady().then(async () => {
     return state;
   });
   ipcMain.handle("desktop:chooseBinary", async () => {
-    if (hasActiveWork()) throw new Error("Wait for the current conversation and background tasks to finish before switching the Grok program.");
+    if (hasActiveWork()) throw new Error(t("Wait for the current conversation and background tasks to finish before switching the Grok program."));
     const result = await dialog.showOpenDialog(mainWindow!, {
-      title: "Select the official grok.exe", properties: ["openFile"], filters: [{ name: "Grok CLI", extensions: ["exe"] }],
+      title: t("Select the official grok.exe"), properties: ["openFile"], filters: [{ name: "Grok CLI", extensions: ["exe"] }],
     });
     if (result.canceled || !result.filePaths[0]) return desktop.getState();
     const state = await desktop.useBinary(result.filePaths[0]);
@@ -230,7 +247,7 @@ app.whenReady().then(async () => {
   ipcMain.handle("desktop:checkUpdate", () => desktop.checkUpdate());
   ipcMain.handle("desktop:downloadUpdate", () => desktop.downloadUpdate());
   ipcMain.handle("desktop:installUpdate", async () => {
-    if (hasActiveWork()) throw new Error("Wait for the current conversation and background tasks to finish before restarting to update.");
+    if (hasActiveWork()) throw new Error(t("Wait for the current conversation and background tasks to finish before restarting to update."));
     if (desktop.getState().update.phase !== "downloaded") return;
     await shutdown();
     desktop.installUpdate();
@@ -245,7 +262,7 @@ app.whenReady().then(async () => {
   ipcMain.handle("grok:pickFolder", async () => {
     const win = mainWindow;
     const options: Electron.OpenDialogOptions = {
-      title: "Select working directory",
+      title: t("Select working directory"),
       properties: ["openDirectory"],
     };
     const result =
@@ -302,12 +319,12 @@ app.whenReady().then(async () => {
   ipcMain.handle("grok:pickFiles", async () => {
     const win = mainWindow;
     const options: Electron.OpenDialogOptions = {
-      title: "Add files",
+      title: t("Add files"),
       properties: ["openFile", "multiSelections"],
       filters: [
-        { name: "All files", extensions: ["*"] },
-        { name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"] },
-        { name: "Audio", extensions: ["wav", "mp3", "m4a", "aac", "ogg", "webm", "flac"] },
+        { name: t("All files"), extensions: ["*"] },
+        { name: t("Images"), extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"] },
+        { name: t("Audio"), extensions: ["wav", "mp3", "m4a", "aac", "ogg", "webm", "flac"] },
       ],
     };
     const result =
@@ -361,7 +378,7 @@ app.whenReady().then(async () => {
     return host.getSnapshot();
   });
   ipcMain.handle("grok:manageSessions", async (_evt, ids: unknown, action: unknown, groupId?: unknown) => {
-    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) throw new Error("Invalid conversation selection");
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) throw new Error(t("Invalid conversation selection"));
     return host.manageSessions(ids, action as import("../shared/types").SessionBatchAction, typeof groupId === "string" ? groupId : undefined);
   });
   ipcMain.handle("grok:saveSessionGroup", (_evt, id: unknown, name: unknown) => {
@@ -388,13 +405,13 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["Delete", "Cancel"],
+      buttons: [t("Delete"), t("Cancel")],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "Delete conversation",
-      message: "Delete this local conversation?",
-      detail: "The conversation and its subagent records will be moved to .grok/session-cleanup-backups as a recoverable backup. Cloud history and project files are not deleted. Running conversations are skipped.",
+      title: t("Delete conversation"),
+      message: t("Delete this local conversation?"),
+      detail: t("The conversation and its subagent records will be moved to .grok/session-cleanup-backups as a recoverable backup. Cloud history and project files are not deleted. Running conversations are skipped."),
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return host.getSnapshot();
@@ -412,15 +429,15 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["Delete", "Cancel"],
+      buttons: [t("Delete"), t("Cancel")],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "Delete archived conversations",
+      title: t("Delete archived conversations"),
       message: explicit
-        ? `Delete the ${count} selected local archived conversation(s)?`
-        : `Delete all ${count} local archived conversation(s)?`,
-      detail: "A recoverable backup is kept in .grok/session-cleanup-backups. Cloud history is not affected. Running conversations are skipped.",
+        ? t("Delete the {count} selected local archived conversation(s)?", { count })
+        : t("Delete all {count} local archived conversation(s)?", { count }),
+      detail: t("A recoverable backup is kept in .grok/session-cleanup-backups. Cloud history is not affected. Running conversations are skipped."),
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return host.getSnapshot();
@@ -458,13 +475,13 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["Delete", "Cancel"],
+      buttons: [t("Delete"), t("Cancel")],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "Delete workspace",
-      message: "Delete all conversations in this workspace?",
-      detail: `${count} local conversation(s) will be deleted, with a backup kept in .grok/session-cleanup-backups. Cloud history and project folders are not affected. Running conversations are skipped.`,
+      title: t("Delete workspace"),
+      message: t("Delete all conversations in this workspace?"),
+      detail: t("{count} local conversation(s) will be deleted, with a backup kept in .grok/session-cleanup-backups. Cloud history and project folders are not affected. Running conversations are skipped.", { count }),
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return host.getSnapshot();
@@ -540,18 +557,18 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const menu = Menu.buildFromTemplate([
       {
-        label: "Copy image",
+        label: t("Copy image"),
         click: () => {
           copyImageToClipboard(path);
         },
       },
       {
-        label: "Copy path",
+        label: t("Copy path"),
         click: () => clipboard.writeText(path),
       },
       { type: "separator" },
       {
-        label: "Open file",
+        label: t("Open file"),
         click: () => {
           void shell.openPath(path);
         },
@@ -562,7 +579,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("grok:openPath", async (_evt, folder: string) => {
     const target = String(folder ?? "").trim();
-    if (!target) return { ok: false, error: "No path to open" };
+    if (!target) return { ok: false, error: t("No path to open") };
     const error = await shell.openPath(target);
     return error ? { ok: false, error } : { ok: true };
   });
@@ -583,13 +600,13 @@ app.whenReady().then(async () => {
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const options: Electron.MessageBoxOptions = {
       type: "warning",
-      buttons: ["Delete", "Cancel"],
+      buttons: [t("Delete"), t("Cancel")],
       defaultId: 1,
       cancelId: 1,
       noLink: true,
-      title: "Delete asset",
-      message: "Delete this file from the library?",
-      detail: "The generated file will be deleted from disk. This cannot be undone.",
+      title: t("Delete asset"),
+      message: t("Delete this file from the library?"),
+      detail: t("The generated file will be deleted from disk. This cannot be undone."),
     };
     const result = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
     if (result.response !== 0) return { ok: false };
@@ -597,7 +614,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("grok:exportMedia", async (_evt, path: unknown, name?: unknown) => {
     const src = String(path ?? "");
-    if (!src || !isAllowedMediaPath(src)) return { ok: false, error: "File not found" };
+    if (!src || !isAllowedMediaPath(src)) return { ok: false, error: t("File not found") };
     const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
     const fileName = typeof name === "string" && name.trim() ? name.trim() : basename(src);
     const result = win

@@ -1,3 +1,5 @@
+import { t } from "../shared/i18n";
+
 export function SendIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -47,8 +49,8 @@ export function ComposerSubmit({
     <button
       className={`send-btn ${busy ? "stop" : ""}`}
       type="button"
-      title={busy ? "Stop" : "Send"}
-      aria-label={busy ? "Stop" : "Send"}
+      title={busy ? t("Stop") : t("Send")}
+      aria-label={busy ? t("Stop") : t("Send")}
       disabled={disabled}
       onClick={onClick}
     >

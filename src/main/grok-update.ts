@@ -5,6 +5,7 @@ import { delimiter, join } from "node:path";
 import { grokHome } from "./grok-config";
 import { resolveGrokBinary } from "./resolve-binary";
 import type { GrokUpdateInfo, SessionSummary, UpdateRiskSession } from "../shared/types";
+import { getLanguage, t } from "../shared/i18n";
 
 type CheckJson = {
   currentVersion?: string;
@@ -93,7 +94,7 @@ function run(
     let stderr = "";
     const timer = setTimeout(() => {
       child.kill();
-      reject(new Error(`${command} timed out`));
+      reject(new Error(t("{command} timed out", { command })));
     }, timeoutMs);
     child.stdout?.on("data", (buf: Buffer) => {
       stdout += buf.toString();
@@ -242,7 +243,7 @@ export function collectAtRisk(
     const known = byId.get(currentId);
     merged.set(currentId, {
       sessionId: currentId,
-      title: known?.title || "Current conversation",
+      title: known?.title || t("Current conversation"),
       cwd: known?.cwd,
       busy,
     });
@@ -354,9 +355,9 @@ async function translateNotesWithGrok(binary: string, notes: string): Promise<st
   const source = notes.trim().slice(0, 12_000);
   if (!source) return "";
   const prompt = [
-    "Translate the following Grok Build release notes into Simplified Chinese.",
-    "Output only the translated Markdown: no preamble, no explanation, and do not use any tools.",
-    "Keep headings, lists and bold text; leave product names, commands, config keys and paths untranslated.",
+    t("Translate the following Grok Build release notes into Simplified Chinese."),
+    t("Output only the translated Markdown: no preamble, no explanation, and do not use any tools."),
+    t("Keep headings, lists and bold text; leave product names, commands, config keys and paths untranslated."),
     "",
     source,
   ].join("\n");
@@ -388,10 +389,10 @@ async function translateNotesWithGrok(binary: string, notes: string): Promise<st
       grokHome(),
     );
     if (result.code !== 0) {
-      throw new Error((result.stderr || result.stdout).trim().slice(-1500) || `grok translation failed (${result.code})`);
+      throw new Error((result.stderr || result.stdout).trim().slice(-1500) || t("grok translation failed ({code})", { code: String(result.code) }));
     }
     const text = extractHeadlessText(result.stdout || result.stderr);
-    if (!text) throw new Error("grok returned no translation");
+    if (!text) throw new Error(t("grok returned no translation"));
     return text.replace(/^```(?:markdown|md)?\s*/i, "").replace(/\s*```$/i, "").trim();
   } finally {
     try {
@@ -407,11 +408,17 @@ export async function recordTranslatedUpdate(binary: string, version: string, no
   if (version && changelogHasVersion(existing, version)) return existing;
   const source = notes.trim();
   if (!source) return existing;
-  // English build: Grok Build's release notes are already in English, so they are
-  // stored as-is instead of being sent to Grok for a Chinese translation.
-  void binary;
-  void translateNotesWithGrok;
-  const body = source;
+  // Grok Build's release notes are in English: keep them as-is for the English UI,
+  // and have Grok translate them only when the UI is in Chinese.
+  let body = source;
+  if (getLanguage() === "zh") {
+    try {
+      body = (await translateNotesWithGrok(binary, source)) || source;
+    } catch (err) {
+      console.error("changelog translate failed", err);
+      body = `> ${t("Automatic translation failed; the original text follows.")}\n\n${source}`;
+    }
+  }
   const day = new Date().toISOString().slice(0, 10);
   const entry = `# ${version} — ${day}\n\n${body.trim()}\n`;
   const next = existing ? `${entry}\n---\n\n${existing}\n` : `${entry}\n`;
@@ -426,13 +433,13 @@ export async function installGrokUpdate(binary?: string, installer?: string): Pr
     if (result.code === 0) return;
     const output = `${result.stdout}\n${result.stderr}`;
     if (installer !== "npm" && !/program not found|npm/i.test(output)) {
-      throw new Error(output.trim().slice(-2000) || `grok update failed (${result.code})`);
+      throw new Error(output.trim().slice(-2000) || t("grok update failed ({code})", { code: String(result.code) }));
     }
   } catch (err) {
     if (installer !== "npm") throw err;
   }
   const npmResult = await run(npmBin(), ["install", "-g", "@xai-official/grok"], 5 * 60_000);
   if (npmResult.code !== 0) {
-    throw new Error((npmResult.stderr || npmResult.stdout).trim().slice(-2000) || "npm install of grok failed");
+    throw new Error((npmResult.stderr || npmResult.stdout).trim().slice(-2000) || t("npm install of grok failed"));
   }
 }

@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 export type SlashCommand = {
   name: string;
   description: string;
@@ -5,6 +7,8 @@ export type SlashCommand = {
   source?: string;
 };
 
+// Descriptions and hints stay English here (this file also runs in the main process,
+// before the language is known); slashCommandText() translates them for display.
 const FALLBACK: SlashCommand[] = [
   { name: "compact", description: "Compact conversation history to save context", hint: "what to keep (optional)" },
   { name: "always-approve", description: "Toggle auto-approve for tools", hint: "on|off" },
@@ -92,6 +96,11 @@ export function parseSlashCommands(raw: unknown): SlashCommand[] {
     out.push(command);
   }
   return out;
+}
+
+/** Display text for a command: built-in English descriptions and hints are translated at call time. */
+export function slashCommandText(command: SlashCommand): { description: string; hint?: string } {
+  return { description: t(command.description), hint: command.hint ? t(command.hint) : command.hint };
 }
 
 export function mergeSlashCommands(...lists: SlashCommand[][]): SlashCommand[] {

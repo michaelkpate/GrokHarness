@@ -41,6 +41,7 @@ import { GROK_SETTINGS_DEFAULTS, isGrokSettingKey, type GrokSettings } from "../
 import { applySetting, loadGrokToml, resolveWorkspace, saveGrokToml, settingsFromToml } from "./grok-config";
 import { buildPromptBlocks, inspectPath, searchWorkspaceFiles } from "./attachments";
 import { checkGrokUpdate, collectAtRisk, installGrokUpdate, recordTranslatedUpdate } from "./grok-update";
+import { t } from "../shared/i18n";
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
@@ -459,7 +460,7 @@ export class AgentHost {
           id: randomUUID(),
           kind: "system",
           tone: "info",
-          text: `Grok Build updated to ${info.currentVersion}. The previous turn was interrupted.`,
+          text: t("Grok Build updated to {version}. The previous turn was interrupted.", { version: String(info.currentVersion) }),
           at: Date.now(),
         });
       }
@@ -675,12 +676,12 @@ export class AgentHost {
 
   saveSessionGroup(id: string | undefined, name: string): void {
     const clean = cleanGroupName(name);
-    if (!clean) throw new Error("Enter a group name");
+    if (!clean) throw new Error(t("Enter a group name"));
     const organization = normalizeOrganization(this.snapshot.sessionOrganization);
-    if (organization.groups.some((group) => group.id !== id && group.name.toLocaleLowerCase() === clean.toLocaleLowerCase())) throw new Error("A group with this name already exists");
+    if (organization.groups.some((group) => group.id !== id && group.name.toLocaleLowerCase() === clean.toLocaleLowerCase())) throw new Error(t("A group with this name already exists"));
     if (id) {
       const group = organization.groups.find((group) => group.id === id);
-      if (!group) throw new Error("Group not found");
+      if (!group) throw new Error(t("Group not found"));
       group.name = clean;
     } else {
       const groupId = randomUUID();
@@ -702,15 +703,15 @@ export class AgentHost {
   }
 
   async manageSessions(ids: string[], action: SessionBatchAction, groupId?: string): Promise<SessionBatchResult> {
-    if (this.sessionManagementBusy) throw new Error("The previous conversation action has not finished yet");
-    if (!["pin", "unpin", "archive", "unarchive", "move", "delete"].includes(action)) throw new Error("Unknown conversation action");
+    if (this.sessionManagementBusy) throw new Error(t("The previous conversation action has not finished yet"));
+    if (!["pin", "unpin", "archive", "unarchive", "move", "delete"].includes(action)) throw new Error(t("Unknown conversation action"));
     this.sessionManagementBusy = true;
     try {
       await this.loadLocalSessions();
       const requested = [...new Set(ids)].slice(0, 2000);
       const rows = this.snapshot.sessions.filter((row) => requested.includes(row.sessionId) && isMainSession(row));
       const organization = normalizeOrganization(this.snapshot.sessionOrganization);
-      if (action === "move" && groupId && !organization.groups.some((group) => group.id === groupId)) throw new Error("Target group does not exist");
+      if (action === "move" && groupId && !organization.groups.some((group) => group.id === groupId)) throw new Error(t("Target group does not exist"));
       const processedIds: string[] = [];
       const errors: string[] = [];
       let backupPath: string | undefined;
@@ -719,7 +720,7 @@ export class AgentHost {
         const idle = rows.filter((row) => {
           const tree = collectSessionTree(this.snapshot.sessions, [row.sessionId]);
           const running = tree.some((child) => registered.has(child.sessionId) || child.sessionId === this.loadingSessionId || child.running || (child.sessionId === this.snapshot.sessionId && this.snapshot.busy));
-          if (running) errors.push(`${row.title || row.sessionId}: running or loading, skipped`);
+          if (running) errors.push(t("{title}: running or loading, skipped", { title: row.title || row.sessionId }));
           return !running;
         });
         if (idle.length) {
@@ -834,7 +835,7 @@ export class AgentHost {
     }
     this.patch({
       sessionId: undefined,
-      sessionTitle: "New chat",
+      sessionTitle: t("New chat"),
       timeline: [],
       permission: undefined,
       busy: false,
@@ -1065,14 +1066,14 @@ export class AgentHost {
     const binary = resolveGrokBinary();
     this.grokBinary = binary;
     this.patch({ grokBinary: binary });
-    this.serve = await startGrokServe(binary, signal);
+    this.serve = await startGrokServe(binary, signal, t);
     const client = new AcpClient({
       onNotification: (method, params) => this.onNotification(method, params),
       onRequest: (id, method, params) => this.onRequest(id, method, params),
       onError: (err) => this.fail(err.message),
       onClose: (code, reason) => {
         if (this.snapshot.connection === "ready") {
-          this.fail(`Agent connection closed (${code}) ${reason}`.trim());
+          this.fail(t("Agent connection closed ({code}) {reason}", { code: String(code), reason: String(reason) }).trim());
         }
       },
     });
@@ -1170,7 +1171,7 @@ export class AgentHost {
         }),
       );
       const sessionId = asString(created?.sessionId);
-      if (!sessionId) throw new Error("session/new did not return a sessionId");
+      if (!sessionId) throw new Error(t("session/new did not return a sessionId"));
       this.db.markRead(sessionId, Date.now());
       const createdMeta = asRecord(created?._meta);
       this.patch({
@@ -1179,7 +1180,7 @@ export class AgentHost {
         workspace: cwd,
         alwaysApprove,
         sessionMode: mode,
-        sessionTitle: "New chat",
+        sessionTitle: t("New chat"),
         commands: mergeSlashCommands(
           this.snapshot.commands,
           parseSlashCommands(created?.availableCommands),
@@ -1264,7 +1265,7 @@ export class AgentHost {
       hits.push({
         id: `session:${session.sessionId}`,
         kind: "session",
-        label: session.title || "Untitled chat",
+        label: session.title || t("Untitled chat"),
         detail: session.cwd ? cwdLabel(session.cwd) : session.sessionId.slice(0, 8),
         sessionId: session.sessionId,
         cwd: session.cwd,
@@ -1402,7 +1403,7 @@ export class AgentHost {
     this.ignoreUpdates = false;
     const client = this.client;
     const sessionId = this.snapshot.sessionId;
-    if (!client || !sessionId) throw new Error("No conversation is ready yet");
+    if (!client || !sessionId) throw new Error(t("No conversation is ready yet"));
     const trimmed = text.trim();
     const files: PromptAttachment[] = [];
     const seen = new Set<string>();
@@ -1469,14 +1470,14 @@ export class AgentHost {
     } finally {
       if (epoch !== this.promptEpoch) return;
       this.patch({ busy: false });
-      this.desktopNotify("turn_complete", "Turn complete");
+      this.desktopNotify("turn_complete", t("Turn complete"));
       if (!this.drainingQueue) void this.drainQueue();
     }
   }
 
   private async formatSessionNote(ref: SessionRef): Promise<string | undefined> {
     const known = this.snapshot.sessions.find((session) => session.sessionId === ref.sessionId);
-    const title = ref.title || known?.title || "Untitled chat";
+    const title = ref.title || known?.title || t("Untitled chat");
     const cwd = ref.cwd || known?.cwd;
     const items = await loadSessionTranscript(ref.sessionId, cwd);
     const lines: string[] = [];
@@ -1569,7 +1570,7 @@ export class AgentHost {
     this.patch({
       workspace,
       sessionId,
-      sessionTitle: known?.title ?? "Untitled chat",
+      sessionTitle: known?.title ?? t("Untitled chat"),
       timeline,
       permission: undefined,
       busy: false,
@@ -1714,7 +1715,7 @@ export class AgentHost {
     if (kind === "turn_completed") {
       const reason = asString(update.stop_reason) ?? asString(update.stopReason);
       if (reason === "error") {
-        this.pushItem({ id: randomUUID(), kind: "system", tone: "error", text: asString(update.agent_result) ?? asString(update.agentResult) ?? "Grok failed to complete this turn" });
+        this.pushItem({ id: randomUUID(), kind: "system", tone: "error", text: asString(update.agent_result) ?? asString(update.agentResult) ?? t("Grok failed to complete this turn") });
       }
       this.finishStreaming();
       return;
@@ -1882,7 +1883,7 @@ export class AgentHost {
     if (method === "x.ai/folder_trust/request") {
       return { trusted: true, outcome: "allow" };
     }
-    throw new Error(`Unhandled reverse request: ${method}`);
+    throw new Error(t("Unhandled reverse request: {method}", { method }));
   }
 
   private async handlePermission(params: JsonValue | undefined): Promise<JsonValue> {
@@ -1913,7 +1914,7 @@ export class AgentHost {
     const request: PermissionRequest = {
       requestId: randomUUID(),
       sessionId: asString(rec.sessionId) ?? this.snapshot.sessionId ?? "",
-      title: asString(toolCall.title) ?? asString(toolCall.toolName) ?? "Approval required",
+      title: asString(toolCall.title) ?? asString(toolCall.toolName) ?? t("Approval required"),
       toolKind: asString(toolCall.kind),
       toolCallId: asString(toolCall.toolCallId),
       rawInput: toolCall.rawInput ?? rec.rawInput,

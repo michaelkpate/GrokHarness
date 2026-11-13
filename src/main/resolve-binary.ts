@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { delimiter, join } from "node:path";
+import { t } from "../shared/i18n";
 
 function firstExisting(candidates: string[]): string | undefined {
   return candidates.find((p) => p && existsSync(p));
@@ -30,6 +31,6 @@ export function resolveGrokBinary(): string {
   }
 
   throw new Error(
-    "grok executable not found. Install the official CLI first, or set GROK_BINARY to point to grok.exe.",
+    t("grok executable not found. Install the official CLI first, or set GROK_BINARY to point to grok.exe."),
   );
 }

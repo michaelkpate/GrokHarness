@@ -9,11 +9,20 @@ export type ServeHandle = {
   url: string;
 };
 
+/**
+ * Translates UI text. agent-host passes the shared i18n `t`; without it the English text is used.
+ * This file keeps no relative imports so scripts/desktop-rules.test.mjs can load it with Node's type stripping.
+ */
+export type Translate = (text: string, params?: Record<string, string | number>) => string;
+
+const english: Translate = (text, params) =>
+  params ? text.replace(/\{(\w+)\}/g, (match, key: string) => (key in params ? String(params[key]) : match)) : text;
+
 function randomSecret(): string {
   return randomBytes(24).toString("hex");
 }
 
-function waitPort(host: string, port: number, timeoutMs: number, signal?: AbortSignal): Promise<void> {
+function waitPort(host: string, port: number, timeoutMs: number, signal?: AbortSignal, t: Translate = english): Promise<void> {
   const start = Date.now();
   return new Promise((resolve, reject) => {
     let finished = false;
@@ -38,7 +47,7 @@ function waitPort(host: string, port: number, timeoutMs: number, signal?: AbortS
         socket?.destroy();
         if (finished) return;
         if (Date.now() - start > timeoutMs) {
-          finish(new Error(`Timed out waiting for grok agent to listen on ${host}:${port}`));
+          finish(new Error(t("Timed out waiting for grok agent to listen on {host}:{port}", { host, port })));
         } else {
           retry = setTimeout(tryOnce, 120);
         }
@@ -48,14 +57,14 @@ function waitPort(host: string, port: number, timeoutMs: number, signal?: AbortS
   });
 }
 
-function pickFreePort(): Promise<number> {
+function pickFreePort(t: Translate = english): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer();
     server.listen(0, "127.0.0.1", () => {
       const addr = server.address();
       if (!addr || typeof addr === "string") {
         server.close();
-        reject(new Error("Could not allocate a local port"));
+        reject(new Error(t("Could not allocate a local port")));
         return;
       }
       const port = addr.port;
@@ -68,8 +77,8 @@ function pickFreePort(): Promise<number> {
   });
 }
 
-export async function startGrokServe(binary: string, signal?: AbortSignal): Promise<ServeHandle> {
-  const port = await pickFreePort();
+export async function startGrokServe(binary: string, signal?: AbortSignal, t: Translate = english): Promise<ServeHandle> {
+  const port = await pickFreePort(t);
   if (signal?.aborted) throw new Error("Grok connection cancelled");
   const secret = randomSecret();
   const bind = `127.0.0.1:${port}`;
@@ -99,7 +108,7 @@ export async function startGrokServe(binary: string, signal?: AbortSignal): Prom
     child.once("exit", (code, signal) => {
       reject(
         new Error(
-          `grok agent exited before it was ready (code=${code}, signal=${signal})\n${stderr.slice(-2000)}`,
+          `${t("grok agent exited before it was ready (code={code}, signal={signal})", { code: String(code), signal: String(signal) })}\n${stderr.slice(-2000)}`,
         ),
       );
     });
@@ -112,7 +121,7 @@ export async function startGrokServe(binary: string, signal?: AbortSignal): Prom
     signal?.addEventListener("abort", cancelStart, { once: true });
   });
   try {
-    await Promise.race([waitPort("127.0.0.1", port, 25_000, signal), exitPromise, cancelled]);
+    await Promise.race([waitPort("127.0.0.1", port, 25_000, signal, t), exitPromise, cancelled]);
     if (signal?.aborted) throw new Error("Grok connection cancelled");
   } catch (err) {
     await stopGrokServe(child);

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ModelInfo } from "../shared/types";
+import { t } from "../shared/i18n";
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -57,7 +58,7 @@ export function ModelEffortPicker({
     ? currentEffort
       ? `${selected.name} · ${currentEffort}`
       : selected.name
-    : currentId || "Model";
+    : currentId || t("Model");
 
   useLayoutEffect(() => {
     if (!open) {
@@ -116,7 +117,7 @@ export function ModelEffortPicker({
         disabled={disabled}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="Model and effort"
+        title={t("Model and effort")}
         onClick={() => setOpen((value) => !value)}
       >
         <span className="model-effort-label">{label}</span>
@@ -128,14 +129,14 @@ export function ModelEffortPicker({
               ref={popRef}
               className="model-effort-pop"
               role="dialog"
-              aria-label="Choose model and effort"
+              aria-label={t("Choose model and effort")}
               style={box ? { top: box.top, left: box.left, width: box.width } : { visibility: "hidden" }}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="model-effort-kicker">Model</div>
+              <div className="model-effort-kicker">{t("Model")}</div>
               <div className="model-effort-list">
                 {models.length === 0 ? (
-                  <div className="model-effort-empty">No models available yet</div>
+                  <div className="model-effort-empty">{t("No models available yet")}</div>
                 ) : (
                   models.map((model) => {
                     const active = model.modelId === currentId;
@@ -155,8 +156,8 @@ export function ModelEffortPicker({
               </div>
               {efforts.length > 0 ? (
                 <div className="model-effort-thinking">
-                  <div className="model-effort-kicker">Effort</div>
-                  <div className="effort-seg" role="radiogroup" aria-label="Effort">
+                  <div className="model-effort-kicker">{t("Effort")}</div>
+                  <div className="effort-seg" role="radiogroup" aria-label={t("Effort")}>
                     {efforts.map((item) => (
                       <button
                         key={item}

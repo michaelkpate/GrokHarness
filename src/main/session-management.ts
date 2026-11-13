@@ -4,13 +4,14 @@ import { join, dirname, relative, isAbsolute } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { SessionSummary } from "../shared/types";
 import { resolveSessionDir } from "./session-store";
+import { t } from "../shared/i18n";
 
 export async function activeLocalSessionIds(): Promise<Set<string>> {
   const home = process.env.GROK_HOME?.trim() || join(homedir(), ".grok");
   let active: unknown;
   try { active = JSON.parse(await readFile(join(home, "active_sessions.json"), "utf8")); }
-  catch (err) { if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw new Error("Unable to verify running conversations"); }
-  if (active !== undefined && !Array.isArray(active)) throw new Error("Invalid format in the running conversations record");
+  catch (err) { if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(t("Unable to verify running conversations")); }
+  if (active !== undefined && !Array.isArray(active)) throw new Error(t("Invalid format in the running conversations record"));
   return new Set(Array.isArray(active) ? active.map((row) => row?.session_id).filter((id): id is string => typeof id === "string") : []);
 }
 
@@ -33,7 +34,7 @@ export async function retireLocalSessions(rows: SessionSummary[]): Promise<{ mov
   const home = process.env.GROK_HOME?.trim() || join(homedir(), ".grok");
   const sourceRoot = await realpath(join(home, "sessions"));
   const active = await activeLocalSessionIds();
-  if (rows.some((row) => active.has(row.sessionId))) throw new Error("A selected conversation or subagent is running; deselect it and try again");
+  if (rows.some((row) => active.has(row.sessionId))) throw new Error(t("A selected conversation or subagent is running; deselect it and try again"));
   const backupPath = join(home, "session-cleanup-backups", `${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`);
   await mkdir(join(backupPath, "sessions"), { recursive: true });
   const movedIds: string[] = [];
@@ -42,10 +43,10 @@ export async function retireLocalSessions(rows: SessionSummary[]): Promise<{ mov
   // Record recovery paths before the first move, including a partially completed batch.
   for (const row of rows) {
     const source = await resolveSessionDir(row.sessionId, row.cwd);
-    if (!source) { errors.push(`${row.title || row.sessionId}: local folder not found`); continue; }
+    if (!source) { errors.push(t("{title}: local folder not found", { title: row.title || row.sessionId })); continue; }
     const resolved = await realpath(source);
     const rel = relative(sourceRoot, resolved);
-    if (!rel || rel.startsWith("..") || isAbsolute(rel) || dirname(resolved) === sourceRoot) throw new Error("Conversation folder is not inside a valid storage folder");
+    if (!rel || rel.startsWith("..") || isAbsolute(rel) || dirname(resolved) === sourceRoot) throw new Error(t("Conversation folder is not inside a valid storage folder"));
     manifest.push({ id: row.sessionId, source: resolved, destination: join(backupPath, "sessions", rel), title: row.title, moved: false });
   }
   const save = () => writeFile(join(backupPath, "manifest.json"), JSON.stringify({ createdAt: new Date().toISOString(), sourceRoot, sessions: manifest, errors }, null, 2) + "\n");
@@ -54,9 +55,9 @@ export async function retireLocalSessions(rows: SessionSummary[]): Promise<{ mov
     try {
       // The official local active-session registry is re-read for each move.
       const activeNow = await activeLocalSessionIds();
-      if (activeNow.has(entry.id)) throw new Error("Conversation is running, skipped");
+      if (activeNow.has(entry.id)) throw new Error(t("Conversation is running, skipped"));
       const resolved = await realpath(entry.source);
-      if (resolved !== entry.source) throw new Error("Conversation storage location changed, skipped");
+      if (resolved !== entry.source) throw new Error(t("Conversation storage location changed, skipped"));
       await mkdir(dirname(entry.destination), { recursive: true });
       await rename(entry.source, entry.destination);
       entry.moved = true;

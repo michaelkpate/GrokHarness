@@ -3,6 +3,8 @@ import type { ComposerSubmitPayload, MentionHit, ModelInfo, PromptAttachment, Se
 import { ModelEffortPicker } from "./ModelEffortPicker";
 import { useImeEnterGuard } from "./ime";
 import { AttachIcon, ComposerSubmit } from "./composer-controls";
+import { t } from "../shared/i18n";
+import { slashCommandText } from "../shared/slash";
 
 function MentionMenu({
   hits,
@@ -38,7 +40,7 @@ function MentionMenu({
             onPick(hit);
           }}
         >
-          <code>{hit.kind === "session" ? "Chat" : "File"}</code>
+          <code>{hit.kind === "session" ? t("Chat") : t("File")}</code>
           <span>{hit.label}</span>
           {hit.detail ? <em>{hit.detail}</em> : null}
         </button>
@@ -66,19 +68,19 @@ function ComposerChips({
           {item.kind === "image" && item.preview ? (
             <img src={item.preview} alt="" />
           ) : (
-            <span className="attach-kind">{item.kind === "image" ? "Image" : "File"}</span>
+            <span className="attach-kind">{item.kind === "image" ? t("Image") : t("File")}</span>
           )}
           <span className="attach-name">{item.name}</span>
-          <button type="button" className="chip-clear" title="Remove" onClick={() => onRemoveAttachment(item.id)}>
+          <button type="button" className="chip-clear" title={t("Remove")} onClick={() => onRemoveAttachment(item.id)}>
             ×
           </button>
         </div>
       ))}
       {sessionRefs.map((item) => (
         <div className="attach-chip session" key={item.sessionId} title={item.cwd || item.sessionId}>
-          <span className="attach-kind">Chat</span>
+          <span className="attach-kind">{t("Chat")}</span>
           <span className="attach-name">{item.title}</span>
-          <button type="button" className="chip-clear" title="Remove" onClick={() => onRemoveSession(item.sessionId)}>
+          <button type="button" className="chip-clear" title={t("Remove")} onClick={() => onRemoveSession(item.sessionId)}>
             ×
           </button>
         </div>
@@ -122,8 +124,8 @@ function SlashMenu({
           }}
         >
           <code>/{command.name}</code>
-          <span>{command.description}</span>
-          {command.hint ? <em>{command.hint}</em> : null}
+          <span>{slashCommandText(command).description}</span>
+          {command.hint ? <em>{slashCommandText(command).hint}</em> : null}
         </button>
       ))}
     </div>
@@ -423,7 +425,7 @@ export const ComposerPane = memo(function ComposerPane({
         onRemoveSession={(sessionId) => setSessionRefs((prev) => prev.filter((item) => item.sessionId !== sessionId))}
       />
       <textarea
-        aria-label="Message input"
+        aria-label={t("Message input")}
         value={draft}
         placeholder={placeholder}
         onChange={(event) => setDraft(event.target.value)}
@@ -433,7 +435,7 @@ export const ComposerPane = memo(function ComposerPane({
         rows={rows}
       />
       <div className="composer-toolbar">
-        <button className="icon-btn attach-btn" type="button" title="Add files or images" onClick={() => void pickAttachments()}>
+        <button className="icon-btn attach-btn" type="button" title={t("Add files or images")} onClick={() => void pickAttachments()}>
           <AttachIcon />
         </button>
         {extraToolbar}
@@ -450,7 +452,7 @@ export const ComposerPane = memo(function ComposerPane({
           onClick={() => void (busy && emptyComposer ? onStop() : submit())}
         />
       </div>
-      <div className="composer-shortcuts"><span>@ mention · / commands</span><span>Enter to send · Ctrl Enter for new line</span></div>
+      <div className="composer-shortcuts"><span>{t("@ mention · / commands")}</span><span>{t("Enter to send · Ctrl Enter for new line")}</span></div>
     </div>
   );
 });

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComposerSubmitPayload, MediaAsset, PromptAttachment } from "../shared/types";
 import { AttachIcon, ComposerSubmit } from "./composer-controls";
 import { useImeEnterGuard } from "./ime";
+import { t } from "../shared/i18n";
 
 export type StudioTab = "image" | "video" | "voice";
 
@@ -11,21 +12,21 @@ const ASPECTS = ["auto", "1:1", "16:9", "9:16", "4:3", "3:4"] as const;
 
 const COPY: Record<StudioTab, { title: string; hint: string; empty: string; placeholder: string }> = {
   image: {
-    title: "Image generation",
-    hint: "Images are saved on this computer. Add a reference image to edit an existing one.",
-    empty: "No images yet. Describe a scene below and results will appear here.",
-    placeholder: "Describe the scene, e.g. a calm sea at golden sunset with silhouetted palms",
+    title: t("Image generation"),
+    hint: t("Images are saved on this computer. Add a reference image to edit an existing one."),
+    empty: t("No images yet. Describe a scene below and results will appear here."),
+    placeholder: t("Describe the scene, e.g. a calm sea at golden sunset with silhouetted palms"),
   },
   video: {
-    title: "Video generation",
-    hint: "Add a reference image as the opening frame, or just describe the shot.",
-    empty: "No videos yet. Describe a shot below and results will appear here.",
-    placeholder: "Describe the shot, e.g. a cat playing piano in a jazz bar, slow push-in",
+    title: t("Video generation"),
+    hint: t("Add a reference image as the opening frame, or just describe the shot."),
+    empty: t("No videos yet. Describe a shot below and results will appear here."),
+    placeholder: t("Describe the shot, e.g. a cat playing piano in a jazz bar, slow push-in"),
   },
   voice: {
-    title: "Transcription",
-    hint: "Dictate, record or upload audio. Transcripts are saved to the local library.",
-    empty: "No transcripts yet. Dictate, record or upload audio and they will appear here.",
+    title: t("Transcription"),
+    hint: t("Dictate, record or upload audio. Transcripts are saved to the local library."),
+    empty: t("No transcripts yet. Dictate, record or upload audio and they will appear here."),
     placeholder: "",
   },
 };
@@ -70,8 +71,8 @@ function dayLabel(key: string): string {
   const now = new Date();
   const today = dayKey(now.getTime());
   const yest = dayKey(now.getTime() - 86400000);
-  if (key === today) return "Today";
-  if (key === yest) return "Yesterday";
+  if (key === today) return t("Today");
+  if (key === yest) return t("Yesterday");
   return key;
 }
 
@@ -226,7 +227,7 @@ export function MediaStudio({
     if (imageRef) {
       await run(
         {
-          text: `Use the attached image with image_edit and modify it as described below. Do not create an unrelated new image.\n${prompt}${aspect !== "auto" ? `\naspect_ratio: ${aspect}` : ""}`,
+          text: `${t("Use the attached image with image_edit and modify it as described below. Do not create an unrelated new image.")}\n${prompt}${aspect !== "auto" ? `\naspect_ratio: ${aspect}` : ""}`,
           attachments: [imageRef],
           sessionRefs: [],
         },
@@ -237,7 +238,7 @@ export function MediaStudio({
     }
     await run(
       {
-        text: `/imagine ${prompt}${aspect !== "auto" ? `\nUse aspect_ratio ${aspect}.` : ""}`,
+        text: `/imagine ${prompt}${aspect !== "auto" ? `\n${t("Use aspect_ratio {aspect}.", { aspect })}` : ""}`,
         attachments: [],
         sessionRefs: [],
       },
@@ -250,8 +251,8 @@ export function MediaStudio({
     const prompt = videoPrompt.trim();
     if (!prompt) return;
     const extra = videoRef
-      ? `Use the attached image as the first frame and call image_to_video. Duration: ${duration} seconds.`
-      : `Duration: ${duration} seconds.`;
+      ? t("Use the attached image as the first frame and call image_to_video. Duration: {duration} seconds.", { duration })
+      : t("Duration: {duration} seconds.", { duration });
     await run(
       {
         text: `/imagine-video ${prompt}\n${extra}`,
@@ -267,7 +268,7 @@ export function MediaStudio({
     const Ctor = speechCtor();
     setError(undefined);
     if (!Ctor) {
-      setError("Speech recognition is not available here. Record audio for Grok to transcribe, or install a system speech pack.");
+      setError(t("Speech recognition is not available here. Record audio for Grok to transcribe, or install a system speech pack."));
       return;
     }
     const rec = new Ctor();
@@ -320,7 +321,7 @@ export function MediaStudio({
       rec.start();
       setRecording(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not open the microphone");
+      setError(err instanceof Error ? err.message : t("Could not open the microphone"));
     }
   }
 
@@ -340,24 +341,24 @@ export function MediaStudio({
     mediaRef.current = undefined;
     setRecording(false);
     if (blob.size < 64) {
-      setError("No usable audio was recorded");
+      setError(t("No usable audio was recorded"));
       return;
     }
     const buf = await blob.arrayBuffer();
     const ext = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "m4a" : "webm";
     const file = await window.grok.saveAudio(buf, blob.type || "audio/webm", ext);
     if (!file) {
-      setError("Could not save the recording");
+      setError(t("Could not save the recording"));
       return;
     }
     await run(
       {
-        text: "Transcribe the attached audio into text. Output only the transcript, with no explanation.",
+        text: t("Transcribe the attached audio into text. Output only the transcript, with no explanation."),
         attachments: [file],
         sessionRefs: [],
       },
       "voice",
-      "Recording",
+      t("Recording"),
     );
   }
 
@@ -365,12 +366,12 @@ export function MediaStudio({
     const rows = await window.grok.pickFiles();
     const file = rows.find((row) => row.mimeType.startsWith("audio/") || /\.(wav|mp3|m4a|aac|ogg|webm|flac)$/i.test(row.name));
     if (!file) {
-      setError("Choose an audio file");
+      setError(t("Choose an audio file"));
       return;
     }
     await run(
       {
-        text: "Transcribe the attached audio into text. Output only the transcript, with no explanation.",
+        text: t("Transcribe the attached audio into text. Output only the transcript, with no explanation."),
         attachments: [file],
         sessionRefs: [],
       },
@@ -383,7 +384,7 @@ export function MediaStudio({
     const text = `${finalText}${liveText}`.trim();
     if (!text) return;
     try {
-      await window.grok.saveTranscript(text, "Dictation");
+      await window.grok.saveTranscript(text, t("Dictation"));
       setFinalText("");
       setLiveText("");
       void load();
@@ -416,13 +417,13 @@ export function MediaStudio({
     <div className="studio-page">
       <div className="studio-toolbar">
         <span className="studio-count">
-          {filtered.length} items{query ? " · filtered" : ""}
+          {t("{count} items", { count: filtered.length })}{query ? ` · ${t("filtered")}` : ""}
         </span>
         <input
           className="studio-search"
           value={query}
-          aria-label="Search media"
-          placeholder="Search prompts or file names"
+          aria-label={t("Search media")}
+          placeholder={t("Search prompts or file names")}
           onChange={(event) => setQuery(event.target.value)}
         />
         <p className="studio-lead">{copy.hint}</p>
@@ -492,7 +493,7 @@ export function MediaStudio({
         {tab === "image" ? (
           <>
             <textarea
-              aria-label={`${copy.title} prompt`}
+              aria-label={t("{title} prompt", { title: copy.title })}
               className="studio-prompt"
               rows={2}
               value={imagePrompt}
@@ -523,13 +524,13 @@ export function MediaStudio({
               <button
                 className="icon-btn attach-btn"
                 type="button"
-                title="Reference image"
+                title={t("Reference image")}
                 onClick={() => void pickImage().then((row) => row && setImageRef(row))}
               >
                 <AttachIcon />
               </button>
               {imageRef ? (
-                <button className="studio-ref-thumb" type="button" title="Remove reference" onClick={() => setImageRef(undefined)}>
+                <button className="studio-ref-thumb" type="button" title={t("Remove reference")} onClick={() => setImageRef(undefined)}>
                   <img src={imageRef.preview || imageRef.path} alt="" />
                 </button>
               ) : null}
@@ -545,7 +546,7 @@ export function MediaStudio({
         {tab === "video" ? (
           <>
             <textarea
-              aria-label={`${copy.title} prompt`}
+              aria-label={t("{title} prompt", { title: copy.title })}
               className="studio-prompt"
               rows={2}
               value={videoPrompt}
@@ -576,13 +577,13 @@ export function MediaStudio({
               <button
                 className="icon-btn attach-btn"
                 type="button"
-                title="First frame"
+                title={t("First frame")}
                 onClick={() => void pickImage().then((row) => row && setVideoRef(row))}
               >
                 <AttachIcon />
               </button>
               {videoRef ? (
-                <button className="studio-ref-thumb" type="button" title="Remove first frame" onClick={() => setVideoRef(undefined)}>
+                <button className="studio-ref-thumb" type="button" title={t("Remove first frame")} onClick={() => setVideoRef(undefined)}>
                   <img src={videoRef.preview || videoRef.path} alt="" />
                 </button>
               ) : null}
@@ -597,7 +598,7 @@ export function MediaStudio({
 
         {tab === "voice" ? (
           <>
-            <div className="studio-transcript">{transcript || "The transcript will appear here."}</div>
+            <div className="studio-transcript">{transcript || t("The transcript will appear here.")}</div>
             <div className="studio-dock-row">
               <button
                 className={`studio-mic ${recording ? "on" : ""}`}
@@ -617,7 +618,7 @@ export function MediaStudio({
                   recording ? stopSpeech() : startSpeech();
                 }}
               >
-                {recording ? "Listening..." : hold ? "Hold to talk" : "Start dictation"}
+                {recording ? t("Listening...") : hold ? t("Hold to talk") : t("Start dictation")}
               </button>
               <button
                 className="btn ghost"
@@ -625,13 +626,13 @@ export function MediaStudio({
                 disabled={blocked}
                 onClick={() => void (recording && mediaRef.current ? stopTapeAndSend() : startTape())}
               >
-                {recording && mediaRef.current ? "Stop & transcribe" : "Record & transcribe"}
+                {recording && mediaRef.current ? t("Stop & transcribe") : t("Record & transcribe")}
               </button>
               <button className="btn ghost" type="button" disabled={blocked} onClick={() => void pickAudioFile()}>
-                Upload audio
+                {t("Upload audio")}
               </button>
               <button className="btn ghost" type="button" disabled={!transcript} onClick={() => void persistTranscript()}>
-                Save to library
+                {t("Save to library")}
               </button>
               <button
                 className="btn primary"
@@ -641,18 +642,18 @@ export function MediaStudio({
                   onInsertText(transcript);
                 }}
               >
-                Insert into chat
+                {t("Insert into chat")}
               </button>
             </div>
           </>
         ) : null}
 
         {error ? <div className="error-banner">{error}</div> : null}
-        {blocked && !error ? <p className="studio-hint">Generating. Results appear in the library when done; the conversation continues in the background.</p> : null}
+        {blocked && !error ? <p className="studio-hint">{t("Generating. Results appear in the library when done; the conversation continues in the background.")}</p> : null}
       </div>
 
       {viewer ? (
-        <Dialog title="Preview" className="media-preview-panel" onClose={() => setViewer(undefined)}>
+        <Dialog title={t("Preview")} className="media-preview-panel" onClose={() => setViewer(undefined)}>
           <div className="studio-lightbox-body" onClick={(event) => event.stopPropagation()}>
             <div className="studio-lightbox-stage">
               {viewer.kind === "video" ? (
@@ -664,16 +665,16 @@ export function MediaStudio({
               )}
             </div>
             <aside className="studio-lightbox-meta">
-              <strong>{viewer.kind === "voice" ? "Transcript" : "Prompt"}</strong>
-              <p>{caption(viewer) || "No prompt recorded"}</p>
+              <strong>{viewer.kind === "voice" ? t("Transcript") : t("Prompt")}</strong>
+              <p>{caption(viewer) || t("No prompt recorded")}</p>
               <em>{formatWhen(viewer.createdAt)}</em>
               <div className="studio-lightbox-actions">
                 <button className="btn ghost" type="button" onClick={() => void reusePrompt(viewer)}>
-                  Reuse prompt
+                  {t("Reuse prompt")}
                 </button>
                 {viewer.kind !== "voice" ? (
                   <button className="btn ghost" type="button" onClick={() => void useAsRef(viewer)}>
-                    Use as reference
+                    {t("Use as reference")}
                   </button>
                 ) : (
                   <button
@@ -683,27 +684,27 @@ export function MediaStudio({
                       if (viewer.text) onInsertText(viewer.text);
                     }}
                   >
-                    Insert into input
+                    {t("Insert into input")}
                   </button>
                 )}
                 {viewer.path ? (
                   <button className="btn ghost" type="button" onClick={() => void window.grok.exportMedia(viewer.path, viewer.name)}>
-                    Download
+                    {t("Download")}
                   </button>
                 ) : null}
                 {viewer.path ? (
                   <button className="btn ghost" type="button" onClick={() => void window.grok.copyMedia(viewer.path)}>
-                    Copy
+                    {t("Copy")}
                   </button>
                 ) : null}
                 {viewer.path ? (
                   <button className="btn ghost" type="button" onClick={() => void window.grok.revealMedia(viewer.path)}>
-                    Show in folder
+                    {t("Show in folder")}
                   </button>
                 ) : null}
                 {viewer.sessionId ? (
                   <button className="btn ghost" type="button" onClick={() => onOpenSession(viewer.sessionId!, viewer.cwd)}>
-                    View conversation
+                    {t("View conversation")}
                   </button>
                 ) : null}
                 <button
@@ -720,7 +721,7 @@ export function MediaStudio({
                     });
                   }}
                 >
-                  Delete
+                  {t("Delete")}
                 </button>
               </div>
             </aside>

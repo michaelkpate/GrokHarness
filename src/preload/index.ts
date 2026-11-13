@@ -18,8 +18,15 @@ import type {
 } from "../shared/types";
 import type { GrokSettings } from "../shared/grok-settings";
 import type { DesktopState } from "../shared/desktop";
+import type { Language, LanguagePreference } from "../shared/i18n";
+
+type LanguageState = { language: Language; preference: LanguagePreference };
 
 export type GrokApi = {
+  i18n: LanguageState & {
+    /** Saves the preference; the renderer reloads afterwards to apply it. */
+    setPreference: (preference: LanguagePreference) => Promise<LanguageState>;
+  };
   windowControls: {
     platform: string;
     setTheme: (theme: "system" | "light" | "dark") => Promise<void>;
@@ -100,7 +107,21 @@ export type GrokApi = {
   onEvent: (cb: (event: AgentUiEvent) => void) => () => void;
 };
 
+function initialLanguage(): LanguageState {
+  try {
+    const state = ipcRenderer.sendSync("i18n:getStateSync") as LanguageState | undefined;
+    if (state && (state.language === "zh" || state.language === "en")) return state;
+  } catch {
+    /* Fall back to English if the main process cannot answer. */
+  }
+  return { language: "en", preference: "system" };
+}
+
 const api: GrokApi = {
+  i18n: {
+    ...initialLanguage(),
+    setPreference: (preference) => ipcRenderer.invoke("i18n:setPreference", preference),
+  },
   windowControls: {
     platform: process.platform,
     setTheme: (theme) => ipcRenderer.invoke("window:setTheme", theme),

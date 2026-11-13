@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { t } from "../../shared/i18n";
 
 /** Shared modal surface. Focus stays inside and returns to its trigger on close. */
 export function Dialog({ title, onClose, className = "", closeLabel, initialFocusSelector, children }: {
@@ -36,7 +37,7 @@ export function Dialog({ title, onClose, className = "", closeLabel, initialFocu
   return createPortal(
     <div className="settings-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className={`settings-panel ${className}`} ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={id}>
-        <header className="settings-head"><h2 id={id}>{title}</h2><button className="icon-btn" type="button" aria-label={closeLabel || `Close ${title}`} title="Close" onClick={onClose}><X size={18} /></button></header>
+        <header className="settings-head"><h2 id={id}>{title}</h2><button className="icon-btn" type="button" aria-label={closeLabel || t("Close {title}", { title })} title={t("Close")} onClick={onClose}><X size={18} /></button></header>
         {children}
       </div>
     </div>, document.body,

@@ -221,6 +221,8 @@ const WORKTREE_OPTIONS = [
   { value: "never", label: "never · Skip" },
 ];
 
+// Titles, labels, hints and option labels stay English: this file is also loaded by the
+// main process before the language is known. SettingsPanel translates them with t().
 export const SETTINGS_SECTIONS: { title: string; fields: SettingsField[] }[] = [
   {
     title: "Permissions",

@@ -25,6 +25,7 @@ import { SessionManager } from "./SessionManager";
 import { CodeView, prettyUnknown } from "./CodeView";
 import { formatDuration, formatElapsedClock, formatSessionElapsed, formatTokens } from "../shared/step-stats";
 import { GROK_SETTINGS_DEFAULTS } from "../shared/grok-settings";
+import { collationLocale, dateLocale, t } from "../shared/i18n";
 import { ComposerPane } from "./ComposerPane";
 import { SettingsPanel } from "./SettingsPanel";
 import { UpdatePanel } from "./UpdatePanel";
@@ -64,18 +65,18 @@ const empty: AppSnapshot = {
 };
 
 const GROUP_SORT_OPTIONS: { id: GroupSort; label: string }[] = [
-  { id: "custom", label: "Custom order" },
-  { id: "recent", label: "Recent activity" },
-  { id: "name-asc", label: "Name A→Z" },
-  { id: "name-desc", label: "Name Z→A" },
-  { id: "count", label: "Conversation count" },
+  { id: "custom", label: t("Custom order") },
+  { id: "recent", label: t("Recent activity") },
+  { id: "name-asc", label: t("Name A→Z") },
+  { id: "name-desc", label: t("Name Z→A") },
+  { id: "count", label: t("Conversation count") },
 ];
 
 const SESSION_SORT_OPTIONS: { id: SessionSort; label: string }[] = [
-  { id: "custom", label: "Custom order" },
-  { id: "recent", label: "Recent activity" },
-  { id: "title-asc", label: "Name A→Z" },
-  { id: "title-desc", label: "Name Z→A" },
+  { id: "custom", label: t("Custom order") },
+  { id: "recent", label: t("Recent activity") },
+  { id: "title-asc", label: t("Name A→Z") },
+  { id: "title-desc", label: t("Name Z→A") },
 ];
 
 const DRAG_MIME = "application/x-grok-sidebar";
@@ -267,7 +268,7 @@ function MessageExtras({
       )}
       {sessionRefs?.map((item) => (
         <div className="attach-chip static session" key={item.sessionId}>
-          <span className="attach-kind">Conversation</span>
+          <span className="attach-kind">{t("Conversation")}</span>
           <span className="attach-name">{item.title}</span>
         </div>
       ))}
@@ -292,27 +293,27 @@ function PromptQueueBar({
 }) {
   if (!queue.length) return null;
   const hint = holding
-    ? "Sends after background tasks · Enter on empty sends now"
+    ? t("Sends after background tasks · Enter on empty sends now")
     : followUp === "steer"
-      ? "Will steer in at the next gap"
-      : "Sends after this turn";
+      ? t("Will steer in at the next gap")
+      : t("Sends after this turn");
   return (
     <div className="prompt-queue">
       <div className="prompt-queue-head">
         <span>
-          Follow-ups {queue.length}
-          {combine ? " · combined" : ""}
+          {t("Follow-ups {count}", { count: queue.length })}
+          {combine ? ` · ${t("combined")}` : ""}
         </span>
         <em>{hint}</em>
       </div>
       {queue.map((item) => (
         <div className="prompt-queue-row" key={item.id}>
-          <span className="prompt-queue-text">{item.text || (item.attachments.length ? "Attachment" : "Follow-up")}</span>
+          <span className="prompt-queue-text">{item.text || (item.attachments.length ? t("Attachment") : t("Follow-up"))}</span>
           <button type="button" className="text-action" onClick={() => onSendNow(item.id)}>
-            Send now
+            {t("Send now")}
           </button>
           <button type="button" className="text-action" onClick={() => onRemove(item.id)}>
-            Remove
+            {t("Remove")}
           </button>
         </div>
       ))}
@@ -518,12 +519,12 @@ function toolRole(item: Extract<TimelineItem, { kind: "tool" }>): ToolRole {
 }
 
 function thoughtLabel(item: Extract<TimelineItem, { kind: "thought" }>, live: boolean): string {
-  if (item.interrupted) return "Thinking interrupted";
+  if (item.interrupted) return t("Thinking interrupted");
   const duration = formatDuration(
     live && item.at != null ? Math.max(0, Date.now() - item.at) : item.durationMs,
   );
-  if (live) return duration ? `Thinking · ${duration}` : "Thinking...";
-  return duration ? `Thought · ${duration}` : "Thinking";
+  if (live) return duration ? t("Thinking · {duration}", { duration }) : t("Thinking...");
+  return duration ? t("Thought · {duration}", { duration }) : t("Thought");
 }
 
 function toolLabel(item: Extract<TimelineItem, { kind: "tool" }>): { role: ToolRole; text: string; added?: number; removed?: number } {
@@ -571,7 +572,7 @@ function TimelineItemView({
     return (
       <div className="bubble user">
         <div className="kicker">
-          You
+          {t("You")}
           <Stamp at={item.at} show={showTimestamps} />
         </div>
         <div className="md">
@@ -588,7 +589,7 @@ function TimelineItemView({
   if (item.kind === "interrupt") {
     return (
       <div className="turn-interrupt" role="status">
-        <span>Interrupted</span>
+        <span>{t("Interrupted")}</span>
         {item.durationMs != null ? <em>{formatElapsedClock(item.durationMs)}</em> : null}
       </div>
     );
@@ -600,7 +601,7 @@ function TimelineItemView({
     return (
       <div className={`bubble assistant${item.interrupted ? " interrupted" : ""}`}>
         <div className="kicker">
-          {item.interrupted ? "Grok · Interrupted" : "Grok"}
+          {item.interrupted ? t("Grok · Interrupted") : "Grok"}
           <Stamp at={item.at} show={showTimestamps} />
         </div>
         <div className="md">
@@ -632,7 +633,7 @@ function TimelineItemView({
   return (
     <div className="bubble">
       <div className={`kicker ${item.tone === "error" ? "thought" : ""}`}>
-        {item.tone === "error" ? "Error" : "System"}
+        {item.tone === "error" ? t("Error") : t("System message")}
         <Stamp at={item.at} show={showTimestamps} />
       </div>
       <div className="error-banner">{item.text}</div>
@@ -682,12 +683,12 @@ function ThoughtRow({ item }: { item: Extract<TimelineItem, { kind: "thought" }>
   return (
     <div className={`op-item thought${item.interrupted ? " interrupted" : ""}${live ? " live" : ""}`}>
       <button type="button" className={`op-row thought thought-toggle${expanded ? " expanded" : ""}`} aria-expanded={expanded} onClick={() => { follow.current = true; setExpanded((value) => !value); }}>
-        {row}<span className="thought-action">{expanded ? "Collapse" : "Expand"}</span>
+        {row}<span className="thought-action">{expanded ? t("Collapse") : t("Expand")}</span>
       </button>
       {expanded ? (
         <div className="thought-inline thought-full md">{isBlank(item.text) ? <StreamingDots /> : <Markdown remarkPlugins={[remarkGfm]}>{item.text}</Markdown>}</div>
       ) : (
-        <div className="thought-preview" ref={preview} tabIndex={0} aria-label="Thinking preview" onWheel={(event) => { if (event.deltaY < 0) follow.current = false; }} onScroll={(event) => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 12; }}>
+        <div className="thought-preview" ref={preview} tabIndex={0} aria-label={t("Thinking preview")} onWheel={(event) => { if (event.deltaY < 0) follow.current = false; }} onScroll={(event) => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 12; }}>
           {isBlank(item.text) ? <StreamingDots /> : item.text}
         </div>
       )}
@@ -835,8 +836,8 @@ const TimelineView = memo(function TimelineView({
   const lastBlock = blocks[blocks.length - 1];
   const waitingLabel =
     lastBlock?.type === "ops" && lastBlock.items.some((item) => item.kind === "tool")
-      ? "Working"
-      : "Thinking";
+      ? t("Working")
+      : t("Thinking");
   return (
     <>
       {blocks.map((block) => {
@@ -877,8 +878,8 @@ function Inspector({
   if (!item) {
     return (
       <aside className="inspector pane">
-        <h2>Inspector</h2>
-        <p className="topbar-title">Select a tool call to see details.</p>
+        <h2>{t("Inspector")}</h2>
+        <p className="topbar-title">{t("Select a tool call to see details.")}</p>
       </aside>
     );
   }
@@ -980,7 +981,7 @@ function PermissionBar({
           </button>
         ))}
         <button className="btn ghost" type="button" onClick={() => onChoose(null)}>
-          Cancel
+          {t("Cancel")}
         </button>
       </div>
     </div>
@@ -1087,7 +1088,7 @@ function SessionRow({
           type="button"
           draggable={false}
           aria-pressed={selected}
-          title={selected ? "Deselect" : "Select"}
+          title={selected ? t("Deselect") : t("Select")}
           onClick={(event) => {
             event.stopPropagation();
             onToggleSelect?.();
@@ -1126,7 +1127,7 @@ function SessionRow({
           className="session-open"
           role="button"
           tabIndex={0}
-          title={busy ? runningHint || "Running" : session.title || "Untitled chat"}
+          title={busy ? runningHint || t("Running") : session.title || t("Untitled chat")}
           onClick={() => {
             if (skipClick.current) {
               skipClick.current = false;
@@ -1154,14 +1155,14 @@ function SessionRow({
           }}
         >
           <span className="session-title">
-            <span className="session-title-text">{session.title || "Untitled chat"}</span>
-            {session.interrupted ? <span className="interrupt-chip" title="This turn was force-stopped">Interrupted</span> : null}
+            <span className="session-title-text">{session.title || t("Untitled chat")}</span>
+            {session.interrupted ? <span className="interrupt-chip" title={t("This turn was force-stopped")}>{t("Interrupted")}</span> : null}
             {busy ? (
-              <span className="session-spinner" title={runningHint || "Running"}>
+              <span className="session-spinner" title={runningHint || t("Running")}>
                 <Spinner />
               </span>
             ) : session.unread ? (
-              <span className="unread-dot" title="Unread" />
+              <span className="unread-dot" title={t("Unread")} />
             ) : null}
           </span>
           <small>{runningHint || formatAgo(session.updatedAtMs ?? session.updatedAt)}</small>
@@ -1169,7 +1170,7 @@ function SessionRow({
       )}
       {selecting ? null : (
         <div className="session-actions">
-          <button className={`pin ${session.pinned ? "on" : ""}`} type="button" title={session.pinned ? "Unpin" : "Pin"} draggable={false} onClick={onPin}>
+          <button className={`pin ${session.pinned ? "on" : ""}`} type="button" title={session.pinned ? t("Unpin") : t("Pin")} draggable={false} onClick={onPin}>
             <PinIcon filled={Boolean(session.pinned)} />
           </button>
         </div>
@@ -1262,13 +1263,17 @@ function HoverCard({
 
 function SubagentStatus({ agent }: { agent: SubagentSummary }) {
   const active = ["running", "pending", "starting", "in_progress"].includes(agent.status);
-  const label = ({ completed: "Completed", failed: "Failed", cancelled: "Cancelled", stopped: "Stopped", running: "Running", pending: "Pending", starting: "Starting", in_progress: "Running" } as Record<string, string>)[agent.status] ?? "Unknown status";
+  const label = ({ completed: t("Completed"), failed: t("Failed"), cancelled: t("Cancelled"), stopped: t("Stopped"), running: t("Running"), pending: t("Pending"), starting: t("Starting"), in_progress: t("Running") } as Record<string, string>)[agent.status] ?? t("Unknown status");
   return <span className={`subagent-status ${active ? "running" : agent.status}`}><i />{label}</span>;
+}
+
+function toolCallsLabel(count: number): string {
+  return count === 1 ? t("1 tool call") : t("{count} tool calls", { count });
 }
 
 function SubagentRow({ agent, selected, onOpen }: { agent: SubagentSummary; selected?: boolean; onOpen: () => void }) {
   return <button type="button" className={`subagent-row${selected ? " selected" : ""}`} onClick={onOpen}>
-    <GitBranch size={16} /><span className="subagent-row-copy"><strong>{agent.description}</strong><small>{agent.agentType}{agent.toolCalls != null ? ` · ${agent.toolCalls} tool calls` : ""}</small></span>
+    <GitBranch size={16} /><span className="subagent-row-copy"><strong>{agent.description}</strong><small>{agent.agentType}{agent.toolCalls != null ? ` · ${toolCallsLabel(agent.toolCalls)}` : ""}</small></span>
     <SubagentStatus agent={agent} /><ChevronRight size={14} />
   </button>;
 }
@@ -1321,25 +1326,25 @@ function SubagentsPane({ sessionId, onOpenImage }: { sessionId: string; onOpenIm
   const active = agents.filter((row) => ["running", "pending", "starting", "in_progress"].includes(row.status)).length;
   return <>
     <details className="subagents-card" open>
-      <summary><GitBranch size={16} /><strong>Subagents</strong><span>{agents.length}{active ? ` · ${active} running` : ""}</span><FoldChevron /></summary>
+      <summary><GitBranch size={16} /><strong>{t("Subagents")}</strong><span>{active ? t("{total} · {active} running", { total: agents.length, active }) : t("{total} total", { total: agents.length })}</span><FoldChevron /></summary>
       <div className="subagent-list">{agents.map((row) => <SubagentRow key={row.id} agent={row} onOpen={() => setPath([row])} />)}</div>
     </details>
-    {selected && agent ? <Dialog title="Subagent details" className="subagent-panel" onClose={() => setPath([])}>
+    {selected && agent ? <Dialog title={t("Subagent details")} className="subagent-panel" onClose={() => setPath([])}>
       <div className="subagent-layout">
-        <nav className="subagent-nav" aria-label="Subagents in this conversation">{agents.map((row) => <SubagentRow key={row.id} agent={row} selected={path[0]?.id === row.id} onOpen={() => setPath([row])} />)}</nav>
+        <nav className="subagent-nav" aria-label={t("Subagents in this conversation")}>{agents.map((row) => <SubagentRow key={row.id} agent={row} selected={path[0]?.id === row.id} onOpen={() => setPath([row])} />)}</nav>
         <div className="subagent-main">
           <header className="subagent-heading">
-            {path.length > 1 ? <button type="button" className="btn ghost tiny" onClick={() => setPath((rows) => rows.slice(0, -1))}><ArrowLeft size={14} />Back to parent subagent</button> : null}
+            {path.length > 1 ? <button type="button" className="btn ghost tiny" onClick={() => setPath((rows) => rows.slice(0, -1))}><ArrowLeft size={14} />{t("Back to parent subagent")}</button> : null}
             <div className="subagent-title"><h3>{agent.description}</h3><SubagentStatus agent={agent} /></div>
-            <p>{agent.agentType}{agent.modelId ? ` · ${agent.modelId}` : ""}{agent.durationMs != null ? ` · ${formatSessionElapsed(agent.durationMs)}` : ""}{agent.toolCalls != null ? ` · ${agent.toolCalls} tool calls` : ""}</p>
+            <p>{agent.agentType}{agent.modelId ? ` · ${agent.modelId}` : ""}{agent.durationMs != null ? ` · ${formatSessionElapsed(agent.durationMs)}` : ""}{agent.toolCalls != null ? ` · ${toolCallsLabel(agent.toolCalls)}` : ""}</p>
           </header>
           <div className="subagent-transcript" ref={content} onWheel={(event) => { if (event.deltaY < 0) follow.current = false; }} onScroll={(event) => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
-            {agent.prompt ? <details className="subagent-task"><summary>Assigned task</summary><div className="md"><Markdown remarkPlugins={[remarkGfm]}>{agent.prompt}</Markdown></div></details> : null}
-            {loading ? <div className="subagent-empty">Loading subagent transcript...</div> : null}
+            {agent.prompt ? <details className="subagent-task"><summary>{t("Assigned task")}</summary><div className="md"><Markdown remarkPlugins={[remarkGfm]}>{agent.prompt}</Markdown></div></details> : null}
+            {loading ? <div className="subagent-empty">{t("Loading subagent transcript...")}</div> : null}
             {error ? <div className="error-banner" role="alert">{error}</div> : null}
-            {view?.subagents.length ? <section className="subagent-children"><h4>Child subagents</h4>{view.subagents.map((child) => <SubagentRow key={child.id} agent={child} onOpen={() => setPath((rows) => [...rows, child])} />)}</section> : null}
+            {view?.subagents.length ? <section className="subagent-children"><h4>{t("Child subagents")}</h4>{view.subagents.map((child) => <SubagentRow key={child.id} agent={child} onOpen={() => setPath((rows) => [...rows, child])} />)}</section> : null}
             {view ? <div className="thread subagent-thread"><TimelineView items={view.timeline} busy={["running", "pending", "starting", "in_progress"].includes(agent.status)} groupTools selectedId={toolId} onSelectTool={(tool) => setToolId(tool.id)} showTimestamps onOpenImage={onOpenImage} /></div> : null}
-            {view && !view.timeline.length ? <div className="subagent-empty">{agent.sessionId ? "No conversation content yet" : "Subagent has no conversation yet"}</div> : null}
+            {view && !view.timeline.length ? <div className="subagent-empty">{agent.sessionId ? t("No conversation content yet") : t("Subagent has no conversation yet")}</div> : null}
             {view?.timeline.find((item) => item.kind === "tool" && item.id === toolId)?.kind === "tool" ? <div className="subagent-tool-detail"><Inspector item={view.timeline.find((item): item is Extract<TimelineItem, { kind: "tool" }> => item.kind === "tool" && item.id === toolId)} /></div> : null}
           </div>
         </div>
@@ -1350,7 +1355,7 @@ function SubagentsPane({ sessionId, onOpenImage }: { sessionId: string; onOpenIm
 
 function SidebarResize({ width, onChange }: { width: number; onChange: (width: number) => void }) {
   const drag = useRef<{ x: number; width: number } | undefined>(undefined);
-  return <div className="sidebar-resize" role="separator" aria-label="Resize conversation sidebar" aria-orientation="vertical" tabIndex={0} aria-valuemin={280} aria-valuemax={520} aria-valuenow={width}
+  return <div className="sidebar-resize" role="separator" aria-label={t("Resize conversation sidebar")} aria-orientation="vertical" tabIndex={0} aria-valuemin={280} aria-valuemax={520} aria-valuenow={width}
     onPointerDown={(event) => { if (event.button !== 0) return; event.preventDefault(); drag.current = { x: event.clientX, width }; event.currentTarget.setPointerCapture(event.pointerId); }}
     onPointerMove={(event) => { if (drag.current) onChange(clampSidebarWidth(drag.current.width + event.clientX - drag.current.x)); }}
     onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }}
@@ -1691,7 +1696,7 @@ export function App() {
     setMenu(undefined);
     if (!folder) return;
     const result = await window.grok.openPath(folder);
-    if (!result.ok) setBusyError(result.error || "Couldn't open working directory");
+    if (!result.ok) setBusyError(result.error || t("Couldn't open working directory"));
   }
 
   const openImage = useCallback(async (path: string, preview?: string, name?: string) => {
@@ -1779,7 +1784,7 @@ export function App() {
   );
   const archivedGroup: SessionGroup = {
     key: "__archived__",
-    label: "Archived",
+    label: t("Archived"),
     sessions: archivedSessions,
   };
   const archiveAllSelected =
@@ -1896,13 +1901,13 @@ export function App() {
   const sessionMenuItems: MenuEntry[] = menuSession
     ? [
         {
-          type: "item", id: "manage", label: "Move to group / manage",
+          type: "item", id: "manage", label: t("Move to group / manage"),
           onClick: () => { setMenu(undefined); setSessionManager({ ids: [menuSession.sessionId] }); },
         },
         {
           type: "item",
           id: "rename",
-          label: "Rename",
+          label: t("Rename"),
           onClick: () => {
             setMenu(undefined);
             setRenamingId(menuSession.sessionId);
@@ -1911,19 +1916,19 @@ export function App() {
         {
           type: "item",
           id: "copy-id",
-          label: "Copy conversation ID",
+          label: t("Copy conversation ID"),
           onClick: () => void copyText(menuSession.sessionId),
         },
         {
           type: "item",
           id: "copy-session",
-          label: "Copy conversation info",
+          label: t("Copy conversation info"),
           onClick: () => void copyText(formatSessionCopy(menuSession)),
         },
         {
           type: "item",
           id: "open-cwd",
-          label: "Open working directory",
+          label: t("Open working directory"),
           disabled: !menuSession.cwd,
           onClick: () => void openFolder(menuSession.cwd),
         },
@@ -1931,7 +1936,7 @@ export function App() {
         {
           type: "item",
           id: "pin",
-          label: menuSession.pinned ? "Unpin" : "Pin",
+          label: menuSession.pinned ? t("Unpin") : t("Pin"),
           onClick: () => {
             setMenu(undefined);
             void window.grok.pinSession(menuSession.sessionId, !menuSession.pinned).then(setState);
@@ -1940,14 +1945,14 @@ export function App() {
         {
           type: "item",
           id: "archive",
-          label: menuSession.archived ? "Unarchive" : "Archive",
+          label: menuSession.archived ? t("Unarchive") : t("Archive"),
           onClick: () => void archiveSession(menuSession),
         },
         { type: "sep", id: "sep-2" },
         {
           type: "item",
           id: "delete",
-          label: "Delete",
+          label: t("Delete"),
           danger: true,
           onClick: () => void deleteSession(menuSession),
         },
@@ -1956,7 +1961,7 @@ export function App() {
   const groupMenuItems: MenuEntry[] = menuGroup
     ? [
         {
-          type: "item", id: "manage-group", label: "Manage conversations in group",
+          type: "item", id: "manage-group", label: t("Manage conversations in group"),
           onClick: () => { setMenu(undefined); setSessionManager({ group: menuGroup.custom ? menuGroup.key : menuGroup.cwd ? `workspace:${menuGroup.cwd}` : menuGroup.key === "__archived__" ? "__archived__" : "__all__" }); },
         },
         ...(menuGroup.cwd
@@ -1964,7 +1969,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "new",
-                label: "New chat here",
+                label: t("New chat here"),
                 onClick: () => {
                   setMenu(undefined);
                   void startIn(menuGroup.cwd!);
@@ -1973,13 +1978,13 @@ export function App() {
               {
                 type: "item" as const,
                 id: "open-cwd",
-                label: "Open working directory",
+                label: t("Open working directory"),
                 onClick: () => void openFolder(menuGroup.cwd),
               },
               {
                 type: "item" as const,
                 id: "copy-path",
-                label: "Copy path",
+                label: t("Copy path"),
                 onClick: () => void copyText(menuGroup.cwd!),
               },
               { type: "sep" as const, id: "sep-1" },
@@ -1988,7 +1993,7 @@ export function App() {
         {
           type: "item",
           id: "toggle",
-          label: state.collapsedGroups.includes(menuGroup.key) ? "Expand" : "Collapse",
+          label: state.collapsedGroups.includes(menuGroup.key) ? t("Expand") : t("Collapse"),
           onClick: () => {
             setMenu(undefined);
             void window.grok.toggleGroup(menuGroup.key).then(setState);
@@ -1999,7 +2004,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "select",
-                label: archiveSelecting ? "Done selecting" : "Select conversations",
+                label: archiveSelecting ? t("Done selecting") : t("Select conversations"),
                 onClick: () => {
                   if (archiveSelecting) exitArchiveSelect();
                   else void beginArchiveSelect();
@@ -2008,7 +2013,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "select-all",
-                label: archiveAllSelected ? "Deselect all" : "Select all",
+                label: archiveAllSelected ? t("Deselect all") : t("Select all"),
                 onClick: () => {
                   setMenu(undefined);
                   setArchiveSelecting(true);
@@ -2026,7 +2031,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "delete-selected",
-                label: archiveSelected.size ? `Delete selected (${archiveSelected.size})` : "Delete selected",
+                label: archiveSelected.size ? t("Delete selected ({count})", { count: archiveSelected.size }) : t("Delete selected"),
                 danger: true,
                 disabled: archiveSelected.size === 0,
                 onClick: () => void deleteArchivedSessions([...archiveSelected]),
@@ -2034,7 +2039,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "delete-all-archived",
-                label: "Delete all conversations",
+                label: t("Delete all conversations"),
                 danger: true,
                 onClick: () => void deleteArchivedSessions(),
               },
@@ -2045,7 +2050,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "hide",
-                label: hiddenKeySet.has(menuGroup.key) ? "Unhide" : "Hide workspace",
+                label: hiddenKeySet.has(menuGroup.key) ? t("Unhide") : t("Hide workspace"),
                 onClick: () => {
                   setMenu(undefined);
                   void (
@@ -2059,7 +2064,7 @@ export function App() {
               {
                 type: "item" as const,
                 id: "delete-workspace",
-                label: "Delete workspace",
+                label: t("Delete workspace"),
                 danger: true,
                 onClick: () => {
                   setMenu(undefined);
@@ -2071,7 +2076,7 @@ export function App() {
       ]
     : [];
   const sortMenuItems: MenuEntry[] = [
-    { type: "label", id: "group-sort", label: "Groups" },
+    { type: "label", id: "group-sort", label: t("Groups") },
     ...GROUP_SORT_OPTIONS.map((option) => ({
       type: "item" as const,
       id: `group-${option.id}`,
@@ -2088,7 +2093,7 @@ export function App() {
       },
     })),
     { type: "sep", id: "sort-sep" },
-    { type: "label", id: "session-sort", label: "Conversations" },
+    { type: "label", id: "session-sort", label: t("Conversations") },
     ...SESSION_SORT_OPTIONS.map((option) => ({
       type: "item" as const,
       id: `session-${option.id}`,
@@ -2111,13 +2116,13 @@ export function App() {
   const firstProjectKey = liveGroups.find((group) => group.key !== "__pinned__")?.key;
   const listToolbar = (
     <div className="workspace-actions">
-            <span className="nav-section-label">{state.sessionOrganization?.groups.length ? "Projects & groups" : "Projects"}</span>
+            <span className="nav-section-label">{state.sessionOrganization?.groups.length ? t("Projects & groups") : t("Projects")}</span>
             {(liveGroups.length > 0 || archivedSessions.length > 0) && (
               <div className="group-bulk">
                 <button
                   className="icon-btn"
                   type="button"
-                  title="Expand all projects"
+                  title={t("Expand all projects")}
                   onClick={() => void window.grok.setCollapsedGroups([]).then(setState)}
                 >
                   <ChevronsDown size={16} />
@@ -2125,7 +2130,7 @@ export function App() {
                 <button
                   className="icon-btn"
                   type="button"
-                  title="Collapse all projects"
+                  title={t("Collapse all projects")}
                   onClick={() => {
                     const keys = [
                       ...liveGroups.flatMap((group) => [group.key, ...(group.nested?.map((child) => child.key) ?? [])]),
@@ -2140,7 +2145,7 @@ export function App() {
                 <button
                   className={`icon-btn ${menu?.kind === "sort" ? "on" : ""}`}
                   type="button"
-                  title="Sort by"
+                  title={t("Sort by")}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2176,18 +2181,18 @@ export function App() {
       {!state.sidebarCollapsed ? <SidebarResize width={appearance.sidebarWidth} onChange={(width) => setAppearance((prev) => ({ ...prev, sidebarWidth: width }))} /> : null}
       {state.sidebarCollapsed ? (
         <aside className="rail pane">
-          <button className="icon-btn" type="button" title="Expand sidebar" onClick={() => void window.grok.setSidebarCollapsed(false)}>
+          <button className="icon-btn" type="button" title={t("Expand sidebar")} onClick={() => void window.grok.setSidebarCollapsed(false)}>
             <PanelLeft size={18} />
           </button>
-          <button className="icon-btn" type="button" title="Search conversations" aria-label="Search conversations" onClick={() => setSearchOpen(true)}><Search size={18} /></button>
-          <button className="icon-btn" type="button" title="Manage conversations" aria-label="Manage conversations" onClick={() => setSessionManager({})}><ListChecks size={18} /></button>
-          <button className="icon-btn" type="button" title="New chat" onClick={() => void beginNew()}>
+          <button className="icon-btn" type="button" title={t("Search conversations")} aria-label={t("Search conversations")} onClick={() => setSearchOpen(true)}><Search size={18} /></button>
+          <button className="icon-btn" type="button" title={t("Manage conversations")} aria-label={t("Manage conversations")} onClick={() => setSessionManager({})}><ListChecks size={18} /></button>
+          <button className="icon-btn" type="button" title={t("New chat")} onClick={() => void beginNew()}>
             <Plus size={18} />
           </button>
           <button
             className={`icon-btn ${studioTab === "image" ? "on" : ""}`}
             type="button"
-            title="Image generation"
+            title={t("Image generation")}
             onClick={() => setStudioTab("image")}
           >
             <ImageIcon size={18} />
@@ -2195,7 +2200,7 @@ export function App() {
           <button
             className={`icon-btn ${studioTab === "video" ? "on" : ""}`}
             type="button"
-            title="Video generation"
+            title={t("Video generation")}
             onClick={() => setStudioTab("video")}
           >
             <Video size={18} />
@@ -2203,7 +2208,7 @@ export function App() {
           <button
             className={`icon-btn ${studioTab === "voice" ? "on" : ""}`}
             type="button"
-            title="Voice transcription"
+            title={t("Voice transcription")}
             onClick={() => setStudioTab("voice")}
           >
             <Mic size={18} />
@@ -2212,7 +2217,7 @@ export function App() {
             <button
               className="icon-btn"
               type="button"
-              title="Settings"
+              title={t("Settings")}
               onClick={() => setSettingsOpen(true)}
             >
               <SettingsIcon size={18} />
@@ -2221,13 +2226,13 @@ export function App() {
               <button
                 className="update-proto rail-update"
                 type="button"
-                title={`Update to ${state.update.latestVersion}`}
+                title={t("Update to {version}", { version: state.update.latestVersion ?? "" })}
                 onClick={() => {
                   setChangelogOpen(true);
                   void window.grok.checkUpdate().then(setState);
                 }}
               >
-                Update
+                {t("Update")}
               </button>
             ) : null}
           </div>
@@ -2236,7 +2241,7 @@ export function App() {
         <aside className="sidebar pane">
           <div className="sidebar-head">
             <span className="brand-mark">Grok Harness</span>
-            <button className="icon-btn" type="button" title="Collapse sidebar" onClick={() => void window.grok.setSidebarCollapsed(true)}>
+            <button className="icon-btn" type="button" title={t("Collapse sidebar")} onClick={() => void window.grok.setSidebarCollapsed(true)}>
               <PanelLeft size={16} />
             </button>
           </div>
@@ -2245,7 +2250,7 @@ export function App() {
 
           <div className="session-list">
             {liveSessions.length === 0 && archivedSessions.length === 0 && (
-              <div className="session-empty">No conversations on this machine yet</div>
+              <div className="session-empty">{t("No conversations on this machine yet")}</div>
             )}
             {liveGroups.map((group) => {
               const isCollapsed = state.collapsedGroups.includes(group.key);
@@ -2310,7 +2315,7 @@ export function App() {
                       <span className="session-count">{group.sessions.length}</span>
                     </div>
                     {group.cwd && (
-                      <button className="btn tiny" type="button" title="New chat in this folder" draggable={false} onClick={() => void startIn(group.cwd!)}>
+                      <button className="btn tiny" type="button" title={t("New chat in this folder")} draggable={false} onClick={() => void startIn(group.cwd!)}>
                         +
                       </button>
                     )}
@@ -2318,7 +2323,7 @@ export function App() {
                       <button
                         className="kebab"
                         type="button"
-                        title="Group actions"
+                        title={t("Group actions")}
                         draggable={false}
                         onClick={(event) => placeMenu(event, { kind: "group", id: group.key })}
                       >
@@ -2327,7 +2332,7 @@ export function App() {
                     ) : null}
                   </header>
                   <Fold collapsed={isCollapsed}>
-                    {group.custom && !group.sessions.length && <button className="custom-group-empty" onClick={() => setSessionManager({ group: group.key })}>Add conversations to group</button>}
+                    {group.custom && !group.sessions.length && <button className="custom-group-empty" onClick={() => setSessionManager({ group: group.key })}>{t("Add conversations to group")}</button>}
                     {nested.length > 0
                       ? nested.map((child) => {
                           const childCollapsed = state.collapsedGroups.includes(child.key);
@@ -2355,7 +2360,7 @@ export function App() {
                                   <button
                                     className="btn tiny"
                                     type="button"
-                                    title="New chat in this folder"
+                                    title={t("New chat in this folder")}
                                     onClick={() => void startIn(child.cwd!)}
                                   >
                                     +
@@ -2419,7 +2424,7 @@ export function App() {
                   >
                     <FoldChevron open={!hiddenCollapsed} />
                     <span className="session-group-copy">
-                      <strong>Hidden</strong>
+                      <strong>{t("Hidden")}</strong>
                     </span>
                     <span className="session-count">{hiddenWorkspaceGroups.length}</span>
                   </button>
@@ -2444,7 +2449,7 @@ export function App() {
                       <button
                         className="kebab"
                         type="button"
-                        title="Workspace actions"
+                        title={t("Workspace actions")}
                         onClick={(event) => placeMenu(event, { kind: "group", id: group.key })}
                       >
                         ⋯
@@ -2469,7 +2474,7 @@ export function App() {
                   >
                     <FoldChevron open={!archivedCollapsed} />
                     <span className="session-group-copy">
-                      <strong>Archived</strong>
+                      <strong>{t("Archived")}</strong>
                     </span>
                     <span className="session-count">
                       {archiveSelecting
@@ -2478,23 +2483,23 @@ export function App() {
                     </span>
                   </button>
                   {archiveSelecting ? (
-                    <button className="text-action" type="button" title="Done selecting" onClick={exitArchiveSelect}>
-                      Done
+                    <button className="text-action" type="button" title={t("Done selecting")} onClick={exitArchiveSelect}>
+                      {t("Done")}
                     </button>
                   ) : (
                     <>
                       <button
                         className="text-action"
                         type="button"
-                        title="Select conversations"
+                        title={t("Select conversations")}
                         onClick={() => void beginArchiveSelect()}
                       >
-                        Select
+                        {t("Select")}
                       </button>
                       <button
                         className="kebab"
                         type="button"
-                        title="Archive actions"
+                        title={t("Archive actions")}
                         onClick={(event) => placeMenu(event, { kind: "group", id: "__archived__" })}
                       >
                         ⋯
@@ -2515,7 +2520,7 @@ export function App() {
                         )
                       }
                     >
-                      {archiveAllSelected ? "Deselect all" : "Select all"}
+                      {archiveAllSelected ? t("Deselect all") : t("Select all")}
                     </button>
                     <button
                       className="text-action danger"
@@ -2523,14 +2528,14 @@ export function App() {
                       disabled={archiveSelected.size === 0}
                       onClick={() => void deleteArchivedSessions([...archiveSelected])}
                     >
-                      Delete selected
+                      {t("Delete selected")}
                     </button>
                     <button
                       className="text-action danger"
                       type="button"
                       onClick={() => void deleteArchivedSessions()}
                     >
-                      Delete all
+                      {t("Delete all")}
                     </button>
                   </div>
                 ) : null}
@@ -2566,20 +2571,20 @@ export function App() {
                 className="user-pop"
                 onPointerDown={(event) => event.stopPropagation()}
               >
-                <h3>{account.email ?? "Grok account"}</h3>
+                <h3>{account.email ?? t("Grok account")}</h3>
                 <dl>
-                  <dt>Status</dt>
+                  <dt>{t("Status")}</dt>
                   <dd>{statusLabel(state.connection)}</dd>
-                  <dt>Plan</dt>
+                  <dt>{t("Plan")}</dt>
                   <dd>{account.plan ?? quota?.plan ?? "—"}</dd>
-                  <dt>Model</dt>
+                  <dt>{t("Model")}</dt>
                   <dd>{account.modelName ?? state.modelName ?? "—"}</dd>
-                  <dt>Version</dt>
+                  <dt>{t("Version")}</dt>
                   <dd>{account.agentVersion ?? state.agentVersion ?? "—"}</dd>
                 </dl>
                 <div className="quota">
                   <div className="user-copy">
-                    <span>Quota usage</span>
+                    <span>{t("Quota usage")}</span>
                   </div>
                   {used != null ? (
                     <>
@@ -2587,14 +2592,14 @@ export function App() {
                         <i style={{ width: `${Math.min(100, Math.max(0, used))}%` }} />
                       </div>
                       <small>
-                        Used {Math.round(used)}%
+                        {t("Used {percent}%", { percent: Math.round(used) })}
                         {quota?.period ? ` · ${quota.period}` : ""}
-                        {quota?.resetAt ? ` · resets ${new Date(quota.resetAt).toLocaleString()}` : ""}
-                        {quota?.extraCredits ? ` · extra ${quota.extraCredits}` : ""}
+                        {quota?.resetAt ? ` · ${t("resets {time}", { time: new Date(quota.resetAt).toLocaleString(dateLocale()) })}` : ""}
+                        {quota?.extraCredits ? ` · ${t("extra {credits}", { credits: quota.extraCredits })}` : ""}
                       </small>
                     </>
                   ) : (
-                    <small>No quota data yet. Refresh account status.</small>
+                    <small>{t("No quota data yet. Refresh account status.")}</small>
                   )}
                 </div>
                 <button
@@ -2606,7 +2611,7 @@ export function App() {
                     void window.grok.checkUpdate().then(setState);
                   }}
                 >
-                  Changelog
+                  {t("Changelog")}
                 </button>
                 <button
                   className="linkish"
@@ -2616,7 +2621,7 @@ export function App() {
                     setUsageOpen(true);
                   }}
                 >
-                  Token usage
+                  {t("Token usage")}
                 </button>
                 <button
                   className="linkish"
@@ -2626,18 +2631,18 @@ export function App() {
                     setSettingsOpen(true);
                   }}
                 >
-                  Open settings
+                  {t("Open settings")}
                 </button>
                 <button className="linkish" type="button" onClick={() => {
                   setAccountOpen(false);
                   setDesktopOpen(true);
-                }}>Desktop app & updates</button>
+                }}>{t("Desktop app & updates")}</button>
               </div>
             )}
             <div className="user-dock-bar">
               <button
                 aria-expanded={accountOpen}
-                aria-label="Account menu"
+                aria-label={t("Account menu")}
                 className="user-chip"
                 type="button"
                 onClick={(event) => {
@@ -2648,7 +2653,7 @@ export function App() {
               >
                 <span className="avatar">{initial}</span>
                 <span className="user-copy">
-                  <strong>{account.email ?? "Grok account"}</strong>
+                  <strong>{account.email ?? t("Grok account")}</strong>
                   <span>
                     <i className={`status-dot ${state.connection}`} />
                     {statusLabel(state.connection)}
@@ -2659,7 +2664,7 @@ export function App() {
               <button
                 className="icon-btn"
                 type="button"
-                title="Settings"
+                title={t("Settings")}
                 onClick={(event) => {
                   event.stopPropagation();
                   setAccountOpen(false);
@@ -2678,7 +2683,7 @@ export function App() {
                     void window.grok.checkUpdate().then(setState);
                   }}
                 >
-                  Update
+                  {t("Update")}
                 </button>
               ) : null}
             </div>
@@ -2691,26 +2696,26 @@ export function App() {
           <div className="topbar-title" title={studioTab ? undefined : state.sessionTitle || undefined}>
             <strong>
               {studioTab === "image"
-                ? "Image generation"
+                ? t("Image generation")
                 : studioTab === "video"
-                  ? "Video generation"
+                  ? t("Video generation")
                   : studioTab === "voice"
-                    ? "Voice transcription"
+                    ? t("Voice transcription")
                     : home
-                      ? "New chat"
-                      : state.sessionTitle || "No conversation selected"}
+                      ? t("New chat")
+                      : state.sessionTitle || t("No conversation selected")}
             </strong>
-            {studioTab ? <span className="topbar-cwd">Library</span> : null}
+            {studioTab ? <span className="topbar-cwd">{t("Library")}</span> : null}
             {!studioTab && !home && (state.busy || state.backgroundTasks.length) ? (
               <>
                 <span
                   className="topbar-spinner"
-                  title={state.busy ? "Running" : formatBackgroundLine(state.backgroundTasks)}
+                  title={state.busy ? t("Running") : formatBackgroundLine(state.backgroundTasks)}
                 >
                   <Spinner />
                 </span>
                 {state.busy ? (
-                  <TurnClock startedAt={state.runStats.turnStartedAt} title="Turn elapsed time" />
+                  <TurnClock startedAt={state.runStats.turnStartedAt} title={t("Turn elapsed time")} />
                 ) : (
                   <span className="turn-clock" title={state.backgroundTasks.map((task) => task.title).join("\n")}>
                     {formatBackgroundLine(state.backgroundTasks)}
@@ -2727,7 +2732,7 @@ export function App() {
               <button
                 className="icon-btn"
                 type="button"
-                title="Conversation actions"
+                title={t("Conversation actions")}
                 onClick={(event) => placeMenu(event, { kind: "session", id: currentSession.sessionId })}
               >
                 <MoreHorizontal size={18} />
@@ -2737,7 +2742,7 @@ export function App() {
               <button
                 className="icon-btn"
                 type="button"
-                title={state.inspectorOpen ? "Collapse panel" : "Open inspector"}
+                title={state.inspectorOpen ? t("Collapse panel") : t("Open inspector")}
                 onClick={() => void window.grok.setInspectorOpen(!state.inspectorOpen)}
               >
                 <PanelRight size={18} />
@@ -2765,8 +2770,8 @@ export function App() {
           />
         ) : home ? (
           <div className="home">
-            <h1>What do you want to do today?</h1>
-            <p>Start with an idea and let Grok do the rest.</p>
+            <h1>{t("What do you want to do today?")}</h1>
+            <p>{t("Start with an idea and let Grok do the rest.")}</p>
             <ComposerPane
               className="home-composer"
               busy={state.busy}
@@ -2774,20 +2779,20 @@ export function App() {
               models={state.models}
               modelId={state.modelId}
               effort={state.effort}
-              placeholder="Describe a task, or use @ to add context"
+              placeholder={t("Describe a task, or use @ to add context")}
               rows={4}
               extraToolbar={
                 <div className={`chip workspace-chip ${draftWorkspace ? "has-value" : ""}`}>
                   <button
                     className="chip-main"
                     type="button"
-                    title={draftWorkspace || "Choose workspace"}
+                    title={draftWorkspace || t("Choose workspace")}
                     onClick={() => void pickWorkspace()}
                   >
-                    <FolderOpen size={14} />{draftWorkspace ? folderLabel(draftWorkspace) : "Choose project"}
+                    <FolderOpen size={14} />{draftWorkspace ? folderLabel(draftWorkspace) : t("Choose project")}
                   </button>
                   {draftWorkspace ? (
-                    <button className="chip-clear" type="button" title="Remove workspace" onClick={(event) => void clearWorkspace(event)}>
+                    <button className="chip-clear" type="button" title={t("Remove workspace")} onClick={(event) => void clearWorkspace(event)}>
                       ×
                     </button>
                   ) : null}
@@ -2822,13 +2827,13 @@ export function App() {
                 {state.sessionId ? <SubagentsPane key={state.sessionId} sessionId={state.sessionId} onOpenImage={openImage} /> : null}
                 {currentSession?.updateInterrupted ? (
                   <div className="interrupt-banner">
-                    <span>This conversation was interrupted by a Grok Build update, not stopped by you.</span>
+                    <span>{t("This conversation was interrupted by a Grok Build update, not stopped by you.")}</span>
                     <button
                       className="btn ghost tiny"
                       type="button"
                       onClick={() => void window.grok.dismissInterrupted(currentSession.sessionId).then(setState)}
                     >
-                      Got it
+                      {t("Got it")}
                     </button>
                   </div>
                 ) : null}
@@ -2844,14 +2849,14 @@ export function App() {
                 />
                 {!state.busy && (state.runStats.durationMs || state.runStats.tokens) ? (
                   <div className="session-stats">
-                    This conversation
+                    {t("This conversation")}
                     {state.runStats.durationMs ? ` ${formatSessionElapsed(state.runStats.durationMs)}` : ""}
                     {state.runStats.tokens ? ` · ${formatTokens(state.runStats.tokens)} tok` : ""}
                   </div>
                 ) : null}
                 {(state.error || busyError) && (
                   <div className="bubble">
-                    <div className="kicker thought">Error</div>
+                    <div className="kicker thought">{t("Error")}</div>
                     <div className="error-banner">{busyError ?? state.error}</div>
                   </div>
                 )}
@@ -2869,9 +2874,9 @@ export function App() {
               />
               {state.busy ? (
                 <div className="turn-live">
-                  Running <TurnClock startedAt={state.runStats.turnStartedAt} />
+                  {t("Running")} <TurnClock startedAt={state.runStats.turnStartedAt} />
                   {state.runStats.tokens ? ` · ${formatTokens(state.runStats.tokens)} tok` : ""}
-                  {state.settings.followUpBehavior === "steer" ? " · follow-ups steer into gaps" : " · Enter queues a follow-up"}
+                  {state.settings.followUpBehavior === "steer" ? ` · ${t("follow-ups steer into gaps")}` : ` · ${t("Enter queues a follow-up")}`}
                 </div>
               ) : null}
               {state.permission && (
@@ -2888,7 +2893,7 @@ export function App() {
                 models={state.models}
                 modelId={state.modelId}
                 effort={state.effort}
-                placeholder="Continue the conversation, or use @ to add context"
+                placeholder={t("Continue the conversation, or use @ to add context")}
                 rows={3}
                 injectText={injectText}
                 onSend={sendComposer}
@@ -2965,8 +2970,8 @@ export function App() {
       )}
       {usageOpen && <UsagePanel usage={state.tokenUsage} onClose={() => setUsageOpen(false)} />}
       {lightbox && (
-        <Dialog title={lightbox.name || "Image preview"} className="chat-image-panel" onClose={() => setLightbox(undefined)}>
-          <img src={lightbox.src} alt={lightbox.name || "Conversation image"} onContextMenu={(event) => {
+        <Dialog title={lightbox.name || t("Image preview")} className="chat-image-panel" onClose={() => setLightbox(undefined)}>
+          <img src={lightbox.src} alt={lightbox.name || t("Conversation image")} onContextMenu={(event) => {
             event.preventDefault();
             if (!/^https?:/i.test(lightbox.path)) void window.grok.imageMenu(lightbox.path);
           }} />
@@ -2979,20 +2984,20 @@ export function App() {
 function statusLabel(state: AppSnapshot["connection"]): string {
   switch (state) {
     case "ready":
-      return "Connected";
+      return t("Connected");
     case "starting":
-      return "Starting";
+      return t("Starting");
     case "error":
-      return "Error";
+      return t("Error");
     case "stopped":
-      return "Disconnected";
+      return t("Disconnected");
     default:
-      return "Disconnected";
+      return t("Disconnected");
   }
 }
 
 function sessionTitle(session: SessionSummary): string {
-  return session.title?.trim() || "Untitled chat";
+  return session.title?.trim() || t("Untitled chat");
 }
 
 function sortSessions(
@@ -3017,8 +3022,8 @@ function sortSessions(
       const pinDelta = (b.pinOrder ?? 0) - (a.pinOrder ?? 0);
       if (pinDelta) return pinDelta;
     }
-    if (sort === "title-asc") return sessionTitle(a).localeCompare(sessionTitle(b), "en", { numeric: true });
-    if (sort === "title-desc") return sessionTitle(b).localeCompare(sessionTitle(a), "en", { numeric: true });
+    if (sort === "title-asc") return sessionTitle(a).localeCompare(sessionTitle(b), collationLocale(), { numeric: true });
+    if (sort === "title-desc") return sessionTitle(b).localeCompare(sessionTitle(a), collationLocale(), { numeric: true });
     return (b.updatedAtMs ?? 0) - (a.updatedAtMs ?? 0);
   });
 }
@@ -3040,12 +3045,12 @@ function sortGroups(groups: SessionGroup[], sort: GroupSort, customOrder?: strin
     });
   }
   return [...groups].sort((a, b) => {
-    if (sort === "name-asc") return a.label.localeCompare(b.label, "en", { numeric: true });
-    if (sort === "name-desc") return b.label.localeCompare(a.label, "en", { numeric: true });
+    if (sort === "name-asc") return a.label.localeCompare(b.label, collationLocale(), { numeric: true });
+    if (sort === "name-desc") return b.label.localeCompare(a.label, collationLocale(), { numeric: true });
     if (sort === "count") {
       const countDelta = b.sessions.length - a.sessions.length;
       if (countDelta) return countDelta;
-      return a.label.localeCompare(b.label, "en", { numeric: true });
+      return a.label.localeCompare(b.label, collationLocale(), { numeric: true });
     }
     return groupLatest(b) - groupLatest(a);
   });
@@ -3091,7 +3096,7 @@ function buildGroups(
   if (pinned.length) {
     groups.push({
       key: "__pinned__",
-      label: "Pinned",
+      label: t("Pinned"),
       sessions: sortSessions(pinned, sessionSort, true, sessionOrder?.__pinned__),
     });
   }
@@ -3104,28 +3109,29 @@ function buildGroups(
 }
 
 function folderLabel(cwd: string): string {
-  if (cwd === "(unknown)") return "Unknown folder";
+  if (cwd === "(unknown)") return t("Unknown folder");
   const parts = cwd.split(/[/\\]/).filter(Boolean);
   return parts[parts.length - 1] ?? cwd;
 }
 
 function formatSessionCopy(session: SessionSummary): string {
-  const lines = [session.title || "Untitled chat", `Conversation ID: ${session.sessionId}`];
-  if (session.cwd) lines.push(`Working directory: ${session.cwd}`);
+  const lines = [session.title || t("Untitled chat"), t("Conversation ID: {id}", { id: session.sessionId })];
+  if (session.cwd) lines.push(t("Working directory: {path}", { path: session.cwd }));
   const ms = session.updatedAtMs ?? (session.updatedAt ? Date.parse(session.updatedAt) : Number.NaN);
-  if (Number.isFinite(ms)) lines.push(`Updated: ${new Date(ms).toLocaleString()}`);
+  if (Number.isFinite(ms)) lines.push(t("Updated: {time}", { time: new Date(ms).toLocaleString(dateLocale()) }));
   return lines.join("\n");
 }
 
 function groupHoverLines(group: SessionGroup): string[] {
+  const n = group.sessions.length;
   const count =
     group.key === "__pinned__" || group.key.startsWith("__pinned__:")
-      ? `${group.sessions.length} pinned conversations`
+      ? n === 1 ? t("1 pinned conversation") : t("{count} pinned conversations", { count: n })
       : group.key === "__archived__"
-        ? `${group.sessions.length} archived conversations`
-        : `${group.sessions.length} conversations`;
+        ? n === 1 ? t("1 archived conversation") : t("{count} archived conversations", { count: n })
+        : n === 1 ? t("1 conversation") : t("{count} conversations", { count: n });
   const latest = Math.max(0, ...group.sessions.map((session) => session.updatedAtMs ?? 0));
-  return latest ? [count, `Last active ${formatAgo(latest)}`] : [count];
+  return latest ? [count, t("Last active {time}", { time: formatAgo(latest) })] : [count];
 }
 
 function formatAgo(value?: string | number): string {
@@ -3136,11 +3142,11 @@ function formatAgo(value?: string | number): string {
   const minute = 60_000;
   const hour = 60 * minute;
   const day = 24 * hour;
-  if (delta < minute) return "just now";
-  if (delta < hour) return `${Math.floor(delta / minute)}m ago`;
-  if (delta < day) return `${Math.floor(delta / hour)}h ago`;
-  if (delta < 7 * day) return `${Math.floor(delta / day)}d ago`;
-  return new Date(ms).toLocaleDateString();
+  if (delta < minute) return t("just now");
+  if (delta < hour) return t("{count}m ago", { count: Math.floor(delta / minute) });
+  if (delta < day) return t("{count}h ago", { count: Math.floor(delta / hour) });
+  if (delta < 7 * day) return t("{count}d ago", { count: Math.floor(delta / day) });
+  return new Date(ms).toLocaleDateString(dateLocale());
 }
 
 function formatClock(at: number): string {
@@ -3148,6 +3154,6 @@ function formatClock(at: number): string {
   const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();
   return sameDay
-    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-    : date.toLocaleString([], { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    ? date.toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : date.toLocaleString(dateLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }

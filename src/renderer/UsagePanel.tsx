@@ -2,9 +2,11 @@ import { Dialog } from "./ui/Dialog";
 import { useMemo } from "react";
 import type { TokenUsageSummary } from "../shared/types";
 import { formatTokens } from "../shared/step-stats";
+import { t } from "../shared/i18n";
 
-const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// Two-letter weekday and short month labels; each language's set is unique, so they work as list keys.
+const WEEKDAYS = [t("Su"), t("Mo"), t("Tu"), t("We"), t("Th"), t("Fr"), t("Sa")];
+const MONTHS = [t("Jan"), t("Feb"), t("Mar"), t("Apr"), t("May"), t("Jun"), t("Jul"), t("Aug"), t("Sep"), t("Oct"), t("Nov"), t("Dec")];
 
 function addDays(day: Date, count: number): Date {
   const next = new Date(day);
@@ -88,24 +90,24 @@ export function UsagePanel({
   }, [grid.weeks]);
 
   return (
-    <Dialog title="Usage" className="usage-panel" onClose={onClose}>
-        <p className="settings-lead">Daily tokens recorded in Grok-Harness conversations on this computer. Darker cells mean more usage that day.</p>
+    <Dialog title={t("Usage")} className="usage-panel" onClose={onClose}>
+        <p className="settings-lead">{t("Daily tokens recorded in Grok-Harness conversations on this computer. Darker cells mean more usage that day.")}</p>
         <div className="usage-kpis">
           <div>
             <strong>{formatTokens(usage.today) || "0"}</strong>
-            <span>Today</span>
+            <span>{t("Today")}</span>
           </div>
           <div>
             <strong>{formatTokens(grid.weekTokens) || "0"}</strong>
-            <span>Last 7 days</span>
+            <span>{t("Last 7 days")}</span>
           </div>
           <div>
             <strong>{formatTokens(grid.monthTokens) || "0"}</strong>
-            <span>Last 30 days</span>
+            <span>{t("Last 30 days")}</span>
           </div>
           <div>
             <strong>{formatTokens(usage.total) || "0"}</strong>
-            <span>All time</span>
+            <span>{t("All time")}</span>
           </div>
         </div>
         <div className="usage-heat">
@@ -139,13 +141,13 @@ export function UsagePanel({
             </div>
           </div>
           <div className="usage-legend">
-            <span>Less</span>
+            <span>{t("Less")}</span>
             <i className="usage-cell lv0" />
             <i className="usage-cell lv1" />
             <i className="usage-cell lv2" />
             <i className="usage-cell lv3" />
             <i className="usage-cell lv4" />
-            <span>More</span>
+            <span>{t("More")}</span>
           </div>
         </div>
     </Dialog>

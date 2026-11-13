@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { AccountInfo, QuotaInfo } from "../shared/types";
 import { containsGrokCredentials } from "./credential-presence";
+import { t } from "../shared/i18n";
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
@@ -118,9 +119,9 @@ function asCents(value: unknown): number | undefined {
 function periodLabel(value: unknown): string | undefined {
   const text = asString(value)?.toUpperCase() ?? "";
   if (!text) return undefined;
-  if (text.includes("WEEK")) return "This week";
-  if (text.includes("MONTH")) return "This month";
-  if (text.includes("DAY")) return "Today";
+  if (text.includes("WEEK")) return t("This week");
+  if (text.includes("MONTH")) return t("This month");
+  if (text.includes("DAY")) return t("Today");
   return undefined;
 }
 

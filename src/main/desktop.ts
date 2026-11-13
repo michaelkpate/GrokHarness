@@ -1,11 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { app, net } from "electron";
+import { readPreferences, writePreferences } from "./preferences";
 import updater from "electron-updater";
 import { hasGrokCredentials } from "./account";
 import { resolveGrokBinary } from "./resolve-binary";
 import { hasWindowsUpdateAssets, isNewerVersion, type DesktopState } from "../shared/desktop";
+import { t } from "../shared/i18n";
 
 const { autoUpdater } = updater;
 
@@ -50,10 +50,8 @@ export class DesktopController {
   }
 
   async init(): Promise<void> {
-    try {
-      const preferences = JSON.parse(await readFile(join(app.getPath("userData"), "desktop-preferences.json"), "utf8"));
-      if (!process.env.GROK_BINARY && typeof preferences.binary === "string") process.env.GROK_BINARY = preferences.binary;
-    } catch { /* Default CLI discovery also works without saved preferences. */ }
+    const preferences = readPreferences();
+    if (!process.env.GROK_BINARY && typeof preferences.binary === "string") process.env.GROK_BINARY = preferences.binary;
     await this.checkCli();
     void this.checkUpdate();
     this.timer = setInterval(() => void this.checkUpdate(), 6 * 60 * 60_000);
@@ -72,7 +70,7 @@ export class DesktopController {
     try {
       const binary = resolveGrokBinary();
       if (process.platform === "win32" && !/\.exe$/i.test(binary)) {
-        throw new Error("Select the official grok.exe executable.");
+        throw new Error(t("Select the official grok.exe executable."));
       }
       const version = await new Promise<string>((resolve, reject) => {
         const child = spawn(binary, ["--version"], {
@@ -81,21 +79,21 @@ export class DesktopController {
           env: { ...process.env, GROK_DISABLE_AUTOUPDATER: "1" },
         });
         let output = "";
-        const timeout = setTimeout(() => { child.kill(); reject(new Error("Grok version check timed out.")); }, 8000);
+        const timeout = setTimeout(() => { child.kill(); reject(new Error(t("Grok version check timed out."))); }, 8000);
         child.stdout?.on("data", (data: Buffer) => { output = (output + data.toString()).slice(-1024); });
         child.once("error", (error) => { clearTimeout(timeout); reject(error); });
         child.once("close", (code) => {
           clearTimeout(timeout);
           const match = /^grok\s+(\S+)/m.exec(output);
           if (code === 0 && match) resolve(match[1]);
-          else reject(new Error("Could not run the selected Grok program."));
+          else reject(new Error(t("Could not run the selected Grok program.")));
         });
       });
       this.state.cli = { installed: true, authenticated: await hasGrokCredentials(), checking: false,
         loggingIn: Boolean(this.loginChild), binary, version };
     } catch {
       this.state.cli = { installed: false, authenticated: false, checking: false, loggingIn: false,
-        error: "No runnable official Grok CLI found." };
+        error: t("No runnable official Grok CLI found.") };
     }
     this.emit();
     return this.getState();
@@ -109,13 +107,13 @@ export class DesktopController {
     await this.checkCli();
     if (this.state.cli.installed) {
       try {
-        await writeFile(join(app.getPath("userData"), "desktop-preferences.json"), JSON.stringify({ binary }), "utf8");
+        writePreferences({ binary });
         return this.getState();
       } catch { /* Preserve the working selection if preferences cannot be saved. */ }
     }
     if (previous) process.env.GROK_BINARY = previous;
     else delete process.env.GROK_BINARY;
-    this.state.cli = { ...previousCli, error: "Could not switch to the selected program; the previous configuration was kept." };
+    this.state.cli = { ...previousCli, error: t("Could not switch to the selected program; the previous configuration was kept.") };
     this.emit();
     return this.getState();
   }
@@ -145,7 +143,7 @@ export class DesktopController {
       if (this.loginChild !== child) return;
       this.loginChild = undefined;
       await this.checkCli();
-      if (failed && !this.state.cli.authenticated) this.state.cli.error = "Sign-in did not complete. Please try again.";
+      if (failed && !this.state.cli.authenticated) this.state.cli.error = t("Sign-in did not complete. Please try again.");
       this.emit();
     };
     child.once("exit", (code) => void finish(code !== 0));
@@ -171,17 +169,17 @@ export class DesktopController {
         signal: AbortSignal.timeout(15_000),
       });
       if (response.status === 404) {
-        this.state.update = { phase: "idle", message: "No official release yet." };
+        this.state.update = { phase: "idle", message: t("No official release yet.") };
       } else {
         if (!response.ok) throw new Error("Release request failed");
         const release = await response.json() as { tag_name?: unknown; assets?: unknown };
         const latestVersion = typeof release.tag_name === "string" ? release.tag_name.replace(/^v/, "") : undefined;
         if (!hasWindowsUpdateAssets(release.assets)) {
-          this.state.update = { phase: "idle", latestVersion, message: "GitHub does not offer a Windows update package yet." };
+          this.state.update = { phase: "idle", latestVersion, message: t("GitHub does not offer a Windows update package yet.") };
         } else if (latestVersion && isNewerVersion(latestVersion, this.state.version)) {
           this.state.update = { phase: "available", latestVersion };
         } else {
-          this.state.update = { phase: "idle", latestVersion, message: "You are on the latest version." };
+          this.state.update = { phase: "idle", latestVersion, message: t("You are on the latest version.") };
         }
       }
     } catch {
@@ -192,7 +190,7 @@ export class DesktopController {
   }
 
   private updateError(): void {
-    this.state.update = { ...this.state.update, phase: "error", error: "App update check or download failed. Please try again later." };
+    this.state.update = { ...this.state.update, phase: "error", error: t("App update check or download failed. Please try again later.") };
     this.emit();
   }
 
@@ -203,7 +201,7 @@ export class DesktopController {
     try {
       const result = await autoUpdater.checkForUpdates();
       if (!result?.isUpdateAvailable) {
-        this.state.update = { phase: "idle", message: "You are on the latest version." };
+        this.state.update = { phase: "idle", message: t("You are on the latest version.") };
       } else {
         await autoUpdater.downloadUpdate();
       }

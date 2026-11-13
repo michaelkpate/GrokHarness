@@ -6,6 +6,7 @@ import { app } from "electron";
 import type { MediaAsset, MediaKind } from "../shared/types";
 import { grokHome } from "./grok-config";
 import type { LocalDb, MediaRow } from "./local-db";
+import { t } from "../shared/i18n";
 
 const IMAGE_EXT = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "avif", "heic"]);
 const VIDEO_EXT = new Set(["mp4", "webm", "mov", "mkv", "m4v"]);
@@ -293,7 +294,7 @@ export async function listMediaLibrary(db: LocalDb, kind?: MediaKind): Promise<M
 
 export async function deleteMediaAsset(db: LocalDb, id: string): Promise<{ ok: boolean; error?: string }> {
   const row = db.hideMedia(id);
-  if (!row) return { ok: false, error: "Asset not found" };
+  if (!row) return { ok: false, error: t("Asset not found") };
   if (row.path && existsSync(row.path) && isAllowedMediaPath(row.path)) {
     try {
       await unlink(row.path);
@@ -306,7 +307,7 @@ export async function deleteMediaAsset(db: LocalDb, id: string): Promise<{ ok: b
 
 export async function saveTranscript(db: LocalDb, text: string, prompt?: string): Promise<MediaAsset> {
   const body = text.trim();
-  if (!body) throw new Error("No transcript to save");
+  if (!body) throw new Error(t("No transcript to save"));
   const dir = join(app.getPath("userData"), "transcripts");
   await mkdir(dir, { recursive: true });
   const id = randomUUID();
@@ -331,7 +332,7 @@ export async function saveTranscript(db: LocalDb, text: string, prompt?: string)
 
 export async function exportMediaFile(src: string, dest: string): Promise<void> {
   const full = resolve(src);
-  if (!isAllowedMediaPath(full) || !existsSync(full)) throw new Error("Source file not found");
+  if (!isAllowedMediaPath(full) || !existsSync(full)) throw new Error(t("Source file not found"));
   await copyFile(full, dest);
 }
 
